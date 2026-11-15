@@ -1,0 +1,3221 @@
+<!DOCTYPE html>
+<html lang="th">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>🌳 ต้นไม้แห่งข้อความ (Fantasy Message Tree - Realtime 100+ Players)</title>
+    <!-- โหลดฟอนต์ภาษาไทย Sarabun และ Prompt -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Prompt:wght@500;600;700&family=Sarabun:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <!-- โหลด html2canvas สำหรับส่งออกรูปภาพ PNG ลงเครื่อง -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+    <style>
+        * {
+            box-sizing: border-box;
+            font-family: 'Sarabun', sans-serif;
+            -webkit-tap-highlight-color: transparent;
+        }
+        h1, h2, h3, .font-display {
+            font-family: 'Prompt', 'Sarabun', sans-serif;
+        }
+
+        /* =========================================================
+           1. ตัวแปรสีธีมฤดูกาล 6 แบบ + กลางวัน/กลางคืน (Local Only)
+           ========================================================= */
+        :root {
+            --bg-top: #fde4cf;
+            --bg-mid: #ffcfd2;
+            --bg-bottom: #f1c0e8;
+            --ground-top: #7f9149;
+            --ground-bottom: #3d4c22;
+            --mountain-far: #d8b4e2;
+            --mountain-mid: #a685b8;
+            --mountain-near: #64783a;
+            --title-color: #4a1d11;
+            --subtitle-color: #6d3121;
+
+            --bark-dark: #3b2114;
+            --bark-mid: #73462e;
+            --bark-light: #d49b72;
+            --moss-light: #a7c957;
+            --moss-dark: #4f6f28;
+            --crystal-light: #bae6fd;
+            --crystal-dark: #38bdf8;
+
+            --canopy-shadow: #7f1d1d;
+            --canopy-mid: #d9481e;
+            --canopy-light: #f97316;
+            --canopy-highlight: #fbbf24;
+            --glow-filter: drop-shadow(0 16px 32px rgba(194, 65, 12, 0.28));
+            --particle-color-1: #ea580c;
+            --particle-color-2: #f59e0b;
+            --biolum-opacity: 0.18;
+            --night-overlay-opacity: 0;
+            --day-sky-opacity: 1;
+        }
+
+        body {
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(180deg, var(--bg-top) 0%, var(--bg-mid) 50%, var(--bg-bottom) 74%, var(--ground-top) 74%, var(--ground-bottom) 100%);
+            min-height: 100vh;
+            min-height: 100dvh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            overflow-x: hidden;
+            transition: background 0.8s ease;
+            position: relative;
+        }
+
+        /* =========================================================
+           2. ฉากหลังทิวทัศน์ ท้องฟ้า ดวงดาว ออโรรา และอนุภาค
+           ========================================================= */
+        #sky-effects {
+            position: fixed;
+            inset: 0;
+            pointer-events: none;
+            z-index: 1;
+            overflow: hidden;
+        }
+        .ambient-orb {
+            position: absolute;
+            border-radius: 50%;
+            filter: blur(55px);
+            opacity: 0.45;
+            transition: background 0.8s ease;
+        }
+        .orb-1 { width: 380px; height: 380px; top: 3%; left: 8%; background: var(--canopy-highlight); }
+        .orb-2 { width: 340px; height: 340px; top: 14%; right: 6%; background: var(--canopy-light); }
+
+        #scenery-svg {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: 1;
+        }
+        #scenery-svg * {
+            transition: fill 0.8s ease, stop-color 0.8s ease, opacity 0.8s ease, stroke 0.8s ease;
+        }
+        .day-elements { opacity: var(--day-sky-opacity); }
+        .night-elements { opacity: var(--night-overlay-opacity); }
+
+        .star-twinkle { animation: twinkleStar 3s ease-in-out infinite alternate; }
+        .star-twinkle-delay { animation: twinkleStar 4.2s ease-in-out infinite alternate-reverse; }
+        @keyframes twinkleStar {
+            0% { opacity: 0.25; transform: scale(0.85); }
+            100% { opacity: 1; transform: scale(1.15); }
+        }
+        .aurora-wave { animation: auroraDrift 14s ease-in-out infinite alternate; }
+        @keyframes auroraDrift {
+            0% { transform: translateX(-3%) scaleY(0.95); opacity: 0.35; }
+            100% { transform: translateX(3%) scaleY(1.08); opacity: 0.65; }
+        }
+        .distant-birds { animation: birdsGlide 42s linear infinite; }
+        @keyframes birdsGlide {
+            0% { transform: translateX(-120px) translateY(0); }
+            50% { transform: translateX(50vw) translateY(-14px); }
+            100% { transform: translateX(110vw) translateY(4px); }
+        }
+
+        .cloud {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.55);
+            border-radius: 50px;
+            filter: blur(2px);
+            opacity: var(--day-sky-opacity);
+            transition: opacity 0.8s ease;
+            animation: floatCloud linear infinite;
+        }
+        .cloud::before, .cloud::after {
+            content: '';
+            position: absolute;
+            background: inherit;
+            border-radius: 50%;
+        }
+        .cloud.c-1 { width: 150px; height: 38px; top: 8%; left: -180px; animation-duration: 50s; }
+        .cloud.c-1::before { width: 60px; height: 60px; top: -28px; left: 20px; }
+        .cloud.c-1::after { width: 46px; height: 46px; top: -20px; right: 20px; }
+        .cloud.c-2 { width: 185px; height: 46px; top: 18%; left: -220px; opacity: calc(var(--day-sky-opacity) * 0.45); animation-duration: 68s; animation-delay: -24s; }
+        .cloud.c-2::before { width: 74px; height: 74px; top: -34px; left: 28px; }
+        .cloud.c-2::after { width: 54px; height: 54px; top: -24px; right: 26px; }
+        @keyframes floatCloud {
+            from { transform: translateX(-200px); }
+            to { transform: translateX(calc(100vw + 240px)); }
+        }
+
+        .season-particle {
+            position: absolute;
+            top: -20px;
+            pointer-events: none;
+            animation: fallDrift linear forwards;
+        }
+        .season-particle.leaf { width: 14px; height: 9px; border-radius: 14px 0 14px 0; }
+        .season-particle.petal { width: 11px; height: 11px; border-radius: 50% 0 50% 50%; }
+        .season-particle.spark {
+            width: 8px; height: 8px; border-radius: 50%;
+            box-shadow: 0 0 12px 3px currentColor;
+            animation: floatUpSpark linear forwards;
+        }
+        .season-particle.firefly {
+            width: 7px; height: 7px; border-radius: 50%;
+            background: #fde047 !important;
+            color: #fef08a !important;
+            box-shadow: 0 0 14px 4px #facc15, 0 0 24px 6px rgba(250, 204, 21, 0.5);
+            animation: fireflyDance linear forwards;
+        }
+        @keyframes fallDrift {
+            0% { transform: translateY(0) translateX(0) rotate(0deg); opacity: 0; }
+            15% { opacity: 0.9; }
+            50% { transform: translateY(45vh) translateX(42px) rotate(190deg); }
+            85% { opacity: 0.85; }
+            100% { transform: translateY(96vh) translateX(-28px) rotate(360deg); opacity: 0; }
+        }
+        @keyframes floatUpSpark {
+            0% { transform: translateY(88vh) translateX(0) scale(0.5); opacity: 0; }
+            20% { opacity: 0.95; }
+            50% { transform: translateY(45vh) translateX(-28px) scale(1.15); }
+            85% { opacity: 0.85; }
+            100% { transform: translateY(6vh) translateX(24px) scale(0.4); opacity: 0; }
+        }
+        @keyframes fireflyDance {
+            0% { transform: translateY(86vh) translateX(0) scale(0.4); opacity: 0; }
+            25% { opacity: 1; transform: translateY(65vh) translateX(35px) scale(1.1); }
+            55% { opacity: 0.45; transform: translateY(44vh) translateX(-30px) scale(0.8); }
+            80% { opacity: 1; transform: translateY(24vh) translateX(25px) scale(1.2); }
+            100% { transform: translateY(8vh) translateX(-15px) scale(0.3); opacity: 0; }
+        }
+
+        /* =========================================================
+           3. แถบหัวข้อด้านบน และแถบเลือกต้นไม้/ฤดูกาล (Local Only)
+           ========================================================= */
+        header {
+            width: 100%;
+            max-width: 1440px;
+            padding: 6px 12px 3px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 40;
+            flex-shrink: 0;
+        }
+        .top-bar {
+            width: 100%;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 6px;
+            flex-wrap: wrap;
+        }
+        .status-badges, .top-actions {
+            display: flex;
+            gap: 5px;
+            align-items: center;
+            flex-wrap: wrap;
+        }
+        .badge {
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(6px);
+            color: #1e293b;
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 11.5px;
+            font-weight: 600;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+            display: inline-flex;
+            align-items: center;
+            gap: 5px;
+            cursor: default;
+        }
+        .badge.clickable {
+            cursor: pointer;
+            transition: transform 0.15s, background 0.2s;
+        }
+        .badge.clickable:hover {
+            background: #ffffff;
+            transform: translateY(-1px);
+        }
+        .dot-live {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            background: #22c55e;
+            box-shadow: 0 0 6px #22c55e;
+            animation: pulseDot 1.5s infinite;
+        }
+        .dot-live.offline {
+            background: #f59e0b;
+            box-shadow: 0 0 6px #f59e0b;
+        }
+        @keyframes pulseDot {
+            0%, 100% { transform: scale(1); opacity: 1; }
+            50% { transform: scale(1.35); opacity: 0.6; }
+        }
+        .icon-btn {
+            background: rgba(255, 255, 255, 0.94);
+            backdrop-filter: blur(6px);
+            color: #1e293b;
+            border: 1px solid rgba(255,255,255,0.7);
+            padding: 3px 10px;
+            border-radius: 20px;
+            font-size: 11.5px;
+            font-weight: 600;
+            cursor: pointer;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.12);
+            transition: transform 0.15s, background 0.2s;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        .icon-btn:hover { background: #ffffff; transform: translateY(-1px); }
+        .icon-btn.highlight-share {
+            background: linear-gradient(135deg, #0284c7, #2563eb);
+            color: #ffffff;
+            border-color: rgba(255,255,255,0.4);
+        }
+        .icon-btn.highlight-share:hover {
+            background: linear-gradient(135deg, #0369a1, #1d4ed8);
+        }
+
+        /* แถบแจ้งเตือนเมื่อยังไม่ได้ตั้งค่า Cloud Realtime */
+        #cloud-setup-banner {
+            width: 100%;
+            max-width: 960px;
+            background: rgba(254, 243, 199, 0.96);
+            border: 1.5px solid #f59e0b;
+            color: #78350f;
+            padding: 5px 14px;
+            border-radius: 999px;
+            font-size: 11.5px;
+            font-weight: 600;
+            display: none;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            margin: 4px 0 2px;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.12);
+            flex-wrap: wrap;
+        }
+        #cloud-setup-banner.visible {
+            display: flex;
+        }
+        #cloud-setup-banner button {
+            background: #d97706;
+            color: #fff;
+            padding: 2px 10px;
+            border-radius: 999px;
+            font-size: 11px;
+        }
+
+        h1 {
+            color: var(--title-color);
+            margin: 2px 0 0;
+            text-shadow: 0 2px 12px rgba(255,255,255,0.35);
+            text-align: center;
+            font-size: clamp(1.1rem, 2.2vw, 1.5rem);
+            transition: color 0.5s ease;
+        }
+        body.night-mode h1 { text-shadow: 0 0 16px rgba(255, 255, 255, 0.45); }
+        p.subtitle {
+            color: var(--subtitle-color);
+            margin: 0 8px 4px;
+            font-size: 11.5px;
+            font-weight: 500;
+            text-align: center;
+            transition: color 0.5s ease;
+        }
+
+        /* แถบปรับแต่งฉากส่วนตัว (4 รูปแบบต้นไม้ + 6 ฤดูกาล + กลางวัน/กลางคืน) */
+        .personalize-bars {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 4px;
+            max-width: 98vw;
+        }
+        .season-bar {
+            display: flex;
+            align-items: center;
+            gap: 5px;
+            background: rgba(255, 255, 255, 0.9);
+            backdrop-filter: blur(8px);
+            padding: 3px 10px;
+            border-radius: 999px;
+            box-shadow: 0 3px 12px rgba(0,0,0,0.14);
+            max-width: 98vw;
+            overflow-x: auto;
+            scrollbar-width: none;
+        }
+        .season-bar::-webkit-scrollbar { display: none; }
+        .season-label {
+            font-size: 11px;
+            font-weight: 700;
+            color: #334155;
+            white-space: nowrap;
+        }
+        .season-chip, .species-chip {
+            border: 1.5px solid transparent;
+            background: rgba(255,255,255,0.94);
+            color: #1e293b;
+            padding: 2px 9px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 600;
+            cursor: pointer;
+            white-space: nowrap;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            transition: all 0.2s ease;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+        }
+        .season-chip:hover, .species-chip:hover { transform: translateY(-1px); background: #ffffff; }
+        .season-chip.active {
+            border-color: #0f172a;
+            background: #0f172a;
+            color: #ffffff;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.22);
+        }
+        .species-chip.active {
+            border-color: #15803d;
+            background: #15803d;
+            color: #ffffff;
+            box-shadow: 0 2px 8px rgba(21, 128, 61, 0.28);
+        }
+        .swatch-dot {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            display: inline-block;
+            border: 1px solid rgba(0,0,0,0.2);
+        }
+        .day-night-divider {
+            width: 1px;
+            height: 16px;
+            background: rgba(100, 116, 139, 0.35);
+            margin: 0 2px;
+            flex-shrink: 0;
+        }
+        .time-toggle-chip {
+            border: 1.5px solid #cbd5e1;
+            background: #fefce8;
+            color: #854d0e;
+            padding: 2px 10px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 700;
+            cursor: pointer;
+            white-space: nowrap;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            transition: all 0.25s ease;
+        }
+        body.night-mode .time-toggle-chip {
+            background: #1e1b4b;
+            color: #fde047;
+            border-color: #6366f1;
+            box-shadow: 0 0 10px rgba(99, 102, 241, 0.45);
+        }
+
+        /* =========================================================
+           4. พื้นที่ต้นไม้ขนาดใหญ่ (#capture-area) รองรับ 30-100+ คน
+           ========================================================= */
+        #capture-area {
+            position: relative;
+            width: 99%;
+            max-width: 1440px;
+            flex: 1;
+            min-height: 620px;
+            height: 68vh;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            z-index: 10;
+            border-radius: 18px;
+            overflow: hidden;
+            margin-top: 2px;
+        }
+        #capture-area.exporting {
+            background: linear-gradient(180deg, var(--bg-top) 0%, var(--bg-mid) 54%, var(--bg-bottom) 78%, var(--ground-top) 78%, var(--ground-bottom) 100%);
+        }
+        #capture-watermark {
+            position: absolute;
+            bottom: 12px;
+            right: 16px;
+            background: rgba(255, 255, 255, 0.9);
+            color: #1e293b;
+            padding: 4px 14px;
+            border-radius: 999px;
+            font-size: 11.5px;
+            font-weight: 700;
+            display: none;
+            z-index: 60;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        #capture-area.exporting #capture-watermark { display: block; }
+        #capture-area.exporting .note-controls,
+        #capture-area.exporting .resize-handle {
+            display: none !important;
+        }
+
+        #tree-container {
+            position: relative;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: flex-end;
+            cursor: crosshair;
+            user-select: none;
+            touch-action: none;
+        }
+
+        /* เลเยอร์ต้นไม้ SVG ขนาดใหญ่เต็มพื้นที่ (z-index: 5) */
+        #fantasy-tree-svg {
+            position: relative;
+            z-index: 5;
+            width: 100%;
+            height: 100%;
+            max-width: 1420px;
+            max-height: 100%;
+            pointer-events: none;
+            filter: var(--glow-filter);
+            transition: filter 0.7s ease;
+            overflow: visible;
+        }
+        #fantasy-tree-svg * {
+            transition: stop-color 0.7s ease, fill 0.7s ease, stroke 0.7s ease, opacity 0.7s ease;
+        }
+
+        /* เลเยอร์ป้ายข้อความ (z-index: 20 อยู่เหนือต้นไม้ SVG เสมอ) */
+        #notes-layer {
+            position: absolute;
+            inset: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 20;
+            pointer-events: none;
+        }
+
+        .biolum-vein {
+            opacity: var(--biolum-opacity);
+            filter: drop-shadow(0 0 8px var(--canopy-highlight));
+        }
+        body.night-mode .biolum-vein {
+            animation: pulseBiolum 3.2s ease-in-out infinite alternate;
+        }
+        @keyframes pulseBiolum {
+            0% { opacity: 0.45; }
+            100% { opacity: 1; }
+        }
+        .sway-veil { transform-origin: top center; animation: veilSway 5.5s ease-in-out infinite alternate; }
+        .sway-veil-delay { transform-origin: top center; animation: veilSway 6.8s ease-in-out infinite alternate-reverse; }
+        @keyframes veilSway {
+            0% { transform: skewX(-1.6deg) scaleY(0.98); }
+            100% { transform: skewX(1.9deg) scaleY(1.03); }
+        }
+
+        /* =========================================================
+           5. เลเยอร์ขบวนสติกเกอร์เดินจากขวาไปซ้าย (Sticker Parade)
+           ========================================================= */
+        #sticker-parade-layer {
+            position: absolute;
+            bottom: 4px;
+            left: 0;
+            right: 0;
+            height: 98px;
+            z-index: 26;
+            pointer-events: none;
+            overflow: hidden;
+        }
+        .walking-sticker {
+            position: absolute;
+            right: -140px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            pointer-events: none;
+            will-change: transform;
+            animation: marchRightToLeft linear forwards;
+        }
+        .sticker-bubble {
+            background: rgba(255, 255, 255, 0.95);
+            color: #1e293b;
+            padding: 2px 10px;
+            border-radius: 999px;
+            font-size: 11px;
+            font-weight: 700;
+            white-space: nowrap;
+            box-shadow: 0 3px 10px rgba(0,0,0,0.18);
+            margin-bottom: 3px;
+            border: 1.5px solid rgba(255,255,255,0.9);
+            max-width: 185px;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        body.night-mode .sticker-bubble {
+            background: rgba(30, 27, 75, 0.92);
+            color: #fef08a;
+            border-color: #818cf8;
+            box-shadow: 0 0 12px rgba(129, 140, 248, 0.45);
+        }
+        .sticker-walker-body {
+            font-size: 34px;
+            line-height: 1;
+            filter: drop-shadow(0 4px 6px rgba(0,0,0,0.35));
+            animation: waddleStep 0.48s ease-in-out infinite alternate;
+        }
+        body.night-mode .sticker-walker-body {
+            filter: drop-shadow(0 0 10px rgba(253, 224, 71, 0.55)) drop-shadow(0 4px 6px rgba(0,0,0,0.5));
+        }
+
+        @keyframes marchRightToLeft {
+            0% { transform: translateX(0); }
+            100% { transform: translateX(calc(-100vw - 280px)); }
+        }
+        @keyframes waddleStep {
+            0% { transform: translateY(0px) rotate(-6deg) scale(1); }
+            50% { transform: translateY(-6px) rotate(0deg) scale(1.04); }
+            100% { transform: translateY(0px) rotate(6deg) scale(1); }
+        }
+
+        /* =========================================================
+           6. ป้ายข้อความ (Notes) ขนาดกะทัดรัดรองรับ 30-100+ ป้าย + ย่อ/ขยายได้
+           ========================================================= */
+        .note {
+            position: absolute;
+            width: 112px;
+            min-height: 68px;
+            padding: 10px 8px 6px;
+            box-shadow: 2px 5px 12px rgba(0,0,0,0.28);
+            font-size: 11.5px;
+            line-height: 1.3;
+            word-wrap: break-word;
+            z-index: 20;
+            pointer-events: auto;
+            cursor: grab;
+            transform-origin: center center;
+            transition: box-shadow 0.2s, filter 0.3s, left 0.25s ease-out, top 0.25s ease-out;
+            display: flex;
+            flex-direction: column;
+            justify-content: space-between;
+            animation: popIn 0.32s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            touch-action: none;
+            color: #1f2937;
+        }
+        /* เอฟเฟกต์แสงเรืองรองเมื่อมีเพื่อนแปะข้อความใหม่เข้ามาแบบเรียลไทม์ */
+        .note.remote-arrival {
+            box-shadow: 0 0 0 3px #fde047, 0 0 26px rgba(250, 204, 21, 0.9), 2px 5px 12px rgba(0,0,0,0.3) !important;
+            z-index: 45;
+        }
+        .note.dark-note {
+            color: #fef08a;
+            border: 1.5px solid rgba(253, 224, 71, 0.48);
+        }
+        .note.dark-note .note-text { color: #fef08a; }
+        .note.dark-note .note-author { color: #fde047; }
+        .note.dark-note .note-footer { border-top-color: rgba(253, 224, 71, 0.25); }
+
+        body.night-mode .note {
+            box-shadow: 0 0 16px rgba(255, 248, 220, 0.42), 2px 5px 12px rgba(0,0,0,0.55);
+        }
+        body.night-mode .note.shape-lantern {
+            box-shadow: 0 0 24px rgba(253, 224, 71, 0.88), 0 0 42px rgba(249, 115, 22, 0.48);
+        }
+        body.night-mode .note.shape-heart {
+            box-shadow: 0 0 20px rgba(244, 114, 182, 0.7), 2px 5px 12px rgba(0,0,0,0.5);
+        }
+        body.night-mode .note.shape-leaf {
+            box-shadow: 0 0 18px rgba(74, 222, 128, 0.6), 2px 5px 12px rgba(0,0,0,0.5);
+        }
+
+        .note:hover,
+        .note.selected {
+            z-index: 40;
+            box-shadow: 0 0 0 2.5px rgba(255,255,255,0.92), 4px 10px 22px rgba(0,0,0,0.42);
+        }
+        .note.dragging,
+        .note.resizing {
+            transition: none !important;
+            z-index: 55;
+            box-shadow: 0 0 0 2.5px #38bdf8, 6px 14px 26px rgba(0,0,0,0.45);
+        }
+        .note.dragging { cursor: grabbing; }
+
+        .note::before {
+            content: '';
+            width: 9px;
+            height: 9px;
+            background: #e74c3c;
+            border-radius: 50%;
+            position: absolute;
+            top: -4px;
+            left: 50%;
+            transform: translateX(-50%);
+            box-shadow: 0 1px 3px rgba(0,0,0,0.5);
+        }
+
+        .note.shape-square { border-radius: 6px; }
+        .note.shape-leaf {
+            border-radius: 32px 6px 32px 6px;
+            padding: 11px 9px 7px;
+            border-bottom: 2px solid rgba(0,0,0,0.14);
+        }
+        .note.shape-leaf::before { background: #2e7d32; top: -3px; left: 86%; }
+        .note.shape-heart {
+            border-radius: 20px 20px 26px 26px;
+            padding: 12px 8px 7px;
+            text-align: center;
+            border: 2px dashed rgba(231, 76, 60, 0.38);
+        }
+        .note.shape-heart::before {
+            content: '❤';
+            width: auto; height: auto;
+            background: transparent;
+            color: #e74c3c;
+            font-size: 12px;
+            top: -8px;
+            box-shadow: none;
+        }
+        .note.shape-lantern {
+            border-radius: 12px 12px 16px 16px;
+            padding: 10px 8px 7px;
+            border-top: 4px solid #b71c1c;
+            border-bottom: 4px solid #b71c1c;
+            text-align: center;
+            box-shadow: 0 0 14px rgba(255, 224, 130, 0.65), 2px 5px 12px rgba(0,0,0,0.28);
+        }
+        .note.shape-lantern::before {
+            content: '';
+            width: 2px; height: 9px;
+            background: #f1c40f;
+            border-radius: 0;
+            top: -12px;
+            box-shadow: none;
+        }
+
+        .note-text {
+            font-weight: 600;
+            color: #1e293b;
+        }
+        .note-footer {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 3px;
+            margin-top: 5px;
+            border-top: 1px dashed rgba(0,0,0,0.12);
+            padding-top: 2px;
+        }
+        .like-pill {
+            background: rgba(255, 255, 255, 0.85);
+            border: 1px solid rgba(225, 29, 72, 0.25);
+            color: #be123c;
+            border-radius: 999px;
+            padding: 1px 5px;
+            font-size: 9.5px;
+            font-weight: 700;
+            cursor: pointer;
+            display: inline-flex;
+            align-items: center;
+            gap: 2px;
+            transition: transform 0.15s, background 0.2s;
+        }
+        .like-pill:hover { background: #ffe4e6; transform: scale(1.08); }
+        .like-pill:active { transform: scale(0.92); }
+        .note-author {
+            font-size: 9.5px;
+            color: rgba(0,0,0,0.68);
+            text-align: right;
+            font-weight: 700;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
+            max-width: 60px;
+        }
+
+        .note-controls {
+            position: absolute;
+            top: -14px;
+            right: -6px;
+            display: none;
+            align-items: center;
+            gap: 2px;
+            background: rgba(15, 23, 42, 0.94);
+            padding: 2px 5px;
+            border-radius: 999px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.35);
+            z-index: 30;
+        }
+        .note:hover .note-controls,
+        .note.selected .note-controls {
+            display: flex;
+        }
+        .note-ctrl-btn {
+            background: transparent;
+            color: #ffffff;
+            border: none;
+            padding: 1px 5px;
+            font-size: 11px;
+            font-weight: 700;
+            line-height: 1.2;
+            border-radius: 999px;
+            cursor: pointer;
+            min-width: 18px;
+            justify-content: center;
+        }
+        .note-ctrl-btn:hover { background: rgba(255,255,255,0.22); }
+        .note-ctrl-btn.del:hover { background: #ef4444; }
+
+        .resize-handle {
+            position: absolute;
+            bottom: -5px;
+            right: -5px;
+            width: 14px;
+            height: 14px;
+            background: #0284c7;
+            border: 2px solid #ffffff;
+            border-radius: 50%;
+            cursor: nwse-resize;
+            display: none;
+            z-index: 30;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.35);
+        }
+        .note:hover .resize-handle,
+        .note.selected .resize-handle {
+            display: block;
+        }
+
+        .floating-heart {
+            position: absolute;
+            font-size: 18px;
+            pointer-events: none;
+            animation: floatHeartUp 1.3s ease-out forwards;
+            z-index: 45;
+        }
+        @keyframes floatHeartUp {
+            0% { transform: translateY(0) scale(0.6); opacity: 1; }
+            100% { transform: translateY(-75px) scale(1.3); opacity: 0; }
+        }
+
+        /* =========================================================
+           7. แผงควบคุมด้านล่าง (2 แถว: แปะข้อความ + ส่งสติกเกอร์เดินขบวน)
+           ========================================================= */
+        #bottom-dock {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            z-index: 40;
+            margin: 4px 8px 10px;
+            max-width: 98%;
+            flex-shrink: 0;
+        }
+        .control-row {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(8px);
+            padding: 7px 12px;
+            border-radius: 14px;
+            box-shadow: 0 4px 16px rgba(0,0,0,0.16);
+            display: flex;
+            gap: 6px;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+        }
+        .parade-row {
+            background: rgba(255, 251, 235, 0.95);
+            border: 1px solid rgba(251, 191, 36, 0.45);
+            padding: 5px 12px;
+        }
+        .parade-label {
+            font-size: 11.5px;
+            font-weight: 700;
+            color: #92400e;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+            white-space: nowrap;
+        }
+        input, select, button {
+            padding: 6px 9px;
+            border: 1px solid #cbd5e1;
+            border-radius: 8px;
+            font-size: 12px;
+        }
+        input[type="text"] { width: 170px; }
+        input.author-input { width: 92px; }
+        input.sticker-msg-input { width: 155px; }
+        button {
+            background: #16a34a;
+            color: white;
+            border: none;
+            cursor: pointer;
+            font-weight: 700;
+            transition: background 0.2s, transform 0.1s;
+            display: inline-flex;
+            align-items: center;
+            gap: 4px;
+        }
+        button:hover { background: #15803d; }
+        button:active { transform: scale(0.97); }
+        button.parade-btn { background: #d97706; }
+        button.parade-btn:hover { background: #b45309; }
+        button.export-btn { background: #0284c7; }
+        button.export-btn:hover { background: #0369a1; }
+        button.clear-btn { background: #dc2626; }
+        button.clear-btn:hover { background: #b91c1c; }
+
+        /* Toast แจ้งเตือน */
+        #toast-banner {
+            position: fixed;
+            top: 14px;
+            left: 50%;
+            transform: translateX(-50%) translateY(-110px);
+            background: #0f172a;
+            color: #fff;
+            padding: 8px 18px;
+            border-radius: 30px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.28);
+            z-index: 300;
+            font-size: 12.5px;
+            font-weight: 600;
+            transition: transform 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            pointer-events: none;
+            max-width: 92vw;
+            text-align: center;
+        }
+        #toast-banner.show { transform: translateX(-50%) translateY(0); }
+
+        /* Modals */
+        .modal-overlay {
+            position: fixed;
+            inset: 0;
+            background: rgba(15, 23, 42, 0.62);
+            backdrop-filter: blur(4px);
+            display: none;
+            justify-content: center;
+            align-items: center;
+            z-index: 250;
+            padding: 16px;
+        }
+        .modal-overlay.active { display: flex; }
+        .modal-card {
+            background: #ffffff;
+            padding: 20px 22px;
+            border-radius: 18px;
+            max-width: 490px;
+            width: 100%;
+            text-align: center;
+            box-shadow: 0 14px 36px rgba(0,0,0,0.3);
+            animation: popIn 0.22s ease-out;
+            max-height: 90vh;
+            overflow-y: auto;
+        }
+        .modal-card h3 { margin: 0 0 8px; color: #1e293b; font-size: 18px; }
+        .modal-card p { margin: 0 0 12px; color: #475569; font-size: 13px; line-height: 1.48; }
+        .room-input-group { display: flex; gap: 8px; margin-bottom: 12px; }
+        .room-input-group input { flex: 1; width: 100%; text-align: center; font-weight: bold; }
+        .modal-actions { display: flex; gap: 8px; justify-content: center; flex-wrap: wrap; margin-top: 8px; }
+        .modal-actions button { flex: 1; min-width: 100px; padding: 9px 12px; justify-content: center; }
+        .btn-cancel { background: #64748b; }
+        .btn-cancel:hover { background: #475569; }
+        .btn-blue { background: #0284c7; }
+        .btn-blue:hover { background: #0369a1; }
+
+        textarea.config-textarea {
+            width: 100%;
+            min-height: 120px;
+            border: 1.5px solid #cbd5e1;
+            border-radius: 10px;
+            padding: 10px;
+            font-family: monospace;
+            font-size: 12px;
+            background: #f8fafc;
+            color: #0f172a;
+            resize: vertical;
+            margin-bottom: 8px;
+        }
+        .guide-box {
+            background: #f1f5f9;
+            border-radius: 10px;
+            padding: 10px 12px;
+            text-align: left;
+            font-size: 12px;
+            color: #334155;
+            margin-bottom: 10px;
+            line-height: 1.5;
+        }
+
+        .all-notes-list, .online-users-list {
+            max-height: 50vh;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin: 10px 0 14px;
+            text-align: left;
+            padding-right: 4px;
+        }
+        .list-note-item {
+            padding: 10px 12px;
+            border-radius: 12px;
+            border: 1px solid rgba(0,0,0,0.08);
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            gap: 10px;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.06);
+        }
+        .list-note-content { font-size: 13px; font-weight: 600; }
+        .list-note-meta { font-size: 11px; opacity: 0.78; margin-top: 2px; }
+
+        .online-user-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 8px 12px;
+            background: #f8fafc;
+            border-radius: 10px;
+            border: 1px solid #e2e8f0;
+            font-size: 13px;
+            font-weight: 600;
+            color: #1e293b;
+        }
+        .online-user-badge {
+            font-size: 11px;
+            background: #dcfce7;
+            color: #15803d;
+            padding: 2px 8px;
+            border-radius: 999px;
+        }
+
+        /* กล่องแสดงภาพตัวอย่างสำหรับมือถือที่บล็อกดาวน์โหลดอัตโนมัติ */
+        #exported-image-preview {
+            max-width: 100%;
+            max-height: 58vh;
+            border-radius: 12px;
+            box-shadow: 0 6px 20px rgba(0,0,0,0.22);
+            margin-bottom: 12px;
+            border: 2px solid #e2e8f0;
+        }
+
+        @media (max-width: 780px) {
+            #capture-area { min-height: 460px; height: 56vh; }
+            input[type="text"] { width: 100%; }
+            input.author-input, input.sticker-msg-input { flex: 1; min-width: 90px; }
+            select { flex: 1; min-width: 82px; }
+            .control-row button { flex: 1; justify-content: center; min-width: 92px; }
+        }
+
+        @keyframes popIn {
+            0% { opacity: 0; transform: scale(0.85); }
+            100% { opacity: 1; transform: scale(1); }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- ฉากหลังทิวทัศน์ ภูเขา ดวงดาว ออโรรา และอนุภาค -->
+    <div id="sky-effects">
+        <div class="ambient-orb orb-1"></div>
+        <div class="ambient-orb orb-2"></div>
+
+        <svg id="scenery-svg" viewBox="0 0 1440 800" preserveAspectRatio="xMidYMax slice" aria-hidden="true">
+            <defs>
+                <linearGradient id="auroraGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                    <stop offset="0%" style="stop-color: var(--canopy-light); stop-opacity: 0;" />
+                    <stop offset="30%" style="stop-color: var(--canopy-highlight); stop-opacity: 0.45;" />
+                    <stop offset="65%" style="stop-color: #38bdf8; stop-opacity: 0.4;" />
+                    <stop offset="100%" style="stop-color: var(--canopy-mid); stop-opacity: 0;" />
+                </linearGradient>
+                <radialGradient id="moonGlow" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stop-color="#fef9c3" stop-opacity="0.95" />
+                    <stop offset="35%" stop-color="#fef08a" stop-opacity="0.35" />
+                    <stop offset="100%" stop-color="#fef08a" stop-opacity="0" />
+                </radialGradient>
+                <radialGradient id="sunGlow" cx="50%" cy="50%" r="50%">
+                    <stop offset="0%" stop-color="#ffffff" stop-opacity="0.9" />
+                    <stop offset="40%" stop-color="#fde68a" stop-opacity="0.35" />
+                    <stop offset="100%" stop-color="#fde68a" stop-opacity="0" />
+                </radialGradient>
+                <linearGradient id="valleyMist" x1="0%" y1="0%" x2="0%" y2="100%">
+                    <stop offset="0%" stop-color="#ffffff" stop-opacity="0" />
+                    <stop offset="60%" stop-color="#ffffff" stop-opacity="0.24" />
+                    <stop offset="100%" stop-color="#ffffff" stop-opacity="0.05" />
+                </linearGradient>
+            </defs>
+
+            <!-- แสงอาทิตย์และฝูงนก (กลางวัน) -->
+            <g class="day-elements">
+                <circle cx="1160" cy="145" r="165" fill="url(#sunGlow)" />
+                <circle cx="1160" cy="145" r="36" fill="#fffbeb" opacity="0.85" />
+                <g class="distant-birds" stroke="var(--title-color)" stroke-width="2" fill="none" stroke-linecap="round" opacity="0.45">
+                    <path d="M 120 150 Q 128 142 135 150 Q 142 142 150 150" />
+                    <path d="M 162 136 Q 168 130 174 136 Q 180 130 186 136" />
+                    <path d="M 148 166 Q 154 160 160 166 Q 166 160 172 166" />
+                </g>
+            </g>
+
+            <!-- ดวงจันทร์ ดวงดาว และออโรรา (กลางคืน) -->
+            <g class="night-elements">
+                <path class="aurora-wave" d="M -50 180 Q 320 90 720 170 T 1490 120 L 1490 260 Q 1080 190 720 250 T -50 240 Z" fill="url(#auroraGrad)" />
+                <circle cx="1150" cy="145" r="160" fill="url(#moonGlow)" />
+                <circle cx="1150" cy="145" r="38" fill="#fef9c3" />
+                <circle cx="1138" cy="136" r="7" fill="#fde047" opacity="0.45" />
+                <circle cx="1162" cy="154" r="5" fill="#fde047" opacity="0.35" />
+                <g fill="#ffffff">
+                    <circle class="star-twinkle" cx="140" cy="95" r="2.2" />
+                    <circle class="star-twinkle-delay" cx="260" cy="140" r="1.8" />
+                    <circle class="star-twinkle" cx="390" cy="75" r="2.5" />
+                    <circle class="star-twinkle-delay" cx="520" cy="130" r="1.6" />
+                    <circle class="star-twinkle" cx="680" cy="85" r="2.3" />
+                    <circle class="star-twinkle-delay" cx="840" cy="125" r="2" />
+                    <circle class="star-twinkle" cx="970" cy="70" r="2.4" />
+                    <circle class="star-twinkle-delay" cx="1310" cy="95" r="2.2" />
+                    <circle class="star-twinkle" cx="1370" cy="175" r="1.7" />
+                    <circle class="star-twinkle-delay" cx="95" cy="210" r="1.9" />
+                </g>
+            </g>
+
+            <!-- ทิวเขาซ้อนชั้น -->
+            <path d="M 0 585 L 160 455 L 340 535 L 540 420 L 760 520 L 980 410 L 1210 510 L 1440 435 L 1440 640 L 0 640 Z" fill="var(--mountain-far)" opacity="0.65" />
+            <rect x="0" y="470" width="1440" height="140" fill="url(#valleyMist)" />
+            <path d="M -20 605 Q 190 485 410 570 T 860 530 T 1280 555 L 1460 515 L 1460 660 L -20 660 Z" fill="var(--mountain-mid)" opacity="0.72" />
+            <path d="M -30 625 Q 280 565 620 605 T 1470 575 L 1470 800 L -30 800 Z" fill="var(--mountain-near)" opacity="0.82" />
+        </svg>
+
+        <div class="cloud c-1"></div>
+        <div class="cloud c-2"></div>
+    </div>
+
+    <div id="toast-banner" role="status" aria-live="polite"></div>
+
+    <!-- Modal ตั้งค่าการเชื่อมต่อออนไลน์ (Firebase Connection Manager) -->
+    <div id="firebase-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="fb-modal-title">
+        <div class="modal-card">
+            <h3 id="fb-modal-title">☁️ ตั้งค่าเชื่อมต่อออนไลน์เรียลไทม์ (30–100+ คน)</h3>
+            <p>วางค่า <b>firebaseConfig</b> จากโปรเจกต์ Firebase ของคุณ (ตั้งค่าครั้งเดียว แล้วกดปุ่มคัดลอกลิงก์ชวนเพื่อน เพื่อนทุกคนที่เปิดลิงก์จะเชื่อมต่อห้องเดียวกันทันทีโดยไม่ต้องตั้งค่าใหม่!)</p>
+            <div class="guide-box">
+                <b>วิธีรับค่าฟรีใน 1 นาที:</b><br>
+                1. ไปที่ <a href="https://console.firebase.google.com" target="_blank" rel="noopener" style="color:#0284c7; font-weight:bold;">console.firebase.google.com</a> สร้างโปรเจกต์<br>
+                2. เปิดเมนู <b>Firestore Database</b> (โหมด Test) และ <b>Authentication &rarr; Anonymous</b><br>
+                3. คัดลอกอ็อบเจกต์ <code>firebaseConfig</code> (JSON หรือโค้ด JS) มาวางในช่องด้านล่างนี้ได้เลย
+            </div>
+            <textarea id="firebase-config-textarea" class="config-textarea" placeholder='{
+  "apiKey": "AIzaSy...",
+  "authDomain": "your-app.firebaseapp.com",
+  "projectId": "your-app",
+  "storageBucket": "your-app.appspot.com",
+  "messagingSenderId": "123456789",
+  "appId": "1:123456789:web:abcdef"
+}'></textarea>
+            <div class="modal-actions">
+                <button type="button" class="btn-cancel" onclick="closeFirebaseModal()">ปิด</button>
+                <button type="button" class="clear-btn" onclick="resetFirebaseConfig()">ล้างค่าการเชื่อมต่อ</button>
+                <button type="button" onclick="saveAndConnectFirebase()">🚀 บันทึกและเชื่อมต่อ</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal รายชื่อผู้เล่นออนไลน์ในห้อง (Presence) -->
+    <div id="presence-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="presence-modal-title">
+        <div class="modal-card">
+            <h3 id="presence-modal-title">👥 ผู้เข้าร่วมออนไลน์ในห้อง (<span id="presence-modal-count">1</span> คน)</h3>
+            <p>แสดงผู้เล่นที่กำลังเปิดหน้าต้นไม้นี้พร้อมกันแบบเรียลไทม์ (รองรับ 30–100+ คน)</p>
+            <div id="online-users-list" class="online-users-list"></div>
+            <div class="modal-actions">
+                <button type="button" class="btn-cancel" onclick="closePresenceModal()">ปิดหน้าต่าง</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal ยืนยันล้างข้อความ -->
+    <div id="confirm-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="modal-title">
+        <div class="modal-card">
+            <h3 id="modal-title">🗑️ ล้างข้อความทั้งหมดในห้องนี้?</h3>
+            <p>ข้อความทั้งหมดบนต้นไม้ของห้องปัจจุบันจะถูกลบออกถาวรสำหรับผู้เล่นทุกคน คุณแน่ใจหรือไม่?</p>
+            <div class="modal-actions">
+                <button type="button" class="btn-cancel" onclick="closeConfirmModal()">ยกเลิก</button>
+                <button type="button" class="clear-btn" onclick="confirmClearNotes()">ลบทั้งหมด</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal จัดการห้องกิจกรรม (Room ID) -->
+    <div id="room-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="room-modal-title">
+        <div class="modal-card">
+            <h3 id="room-modal-title">🚪 เปลี่ยนหรือสร้างห้องกิจกรรม</h3>
+            <p>กรอกชื่อห้องเดียวกันบน iPad, iPhone หรือเครื่องเพื่อน เพื่อเชื่อมต้นไม้เดียวกันแบบเรียลไทม์ (รองรับ 30–100+ คนพร้อมกัน)</p>
+            <div class="room-input-group">
+                <input type="text" id="room-code-input" placeholder="เช่น PUBLIC-TREE หรือ family-2026" maxlength="30">
+            </div>
+            <div class="modal-actions">
+                <button type="button" class="btn-cancel" onclick="closeRoomModal()">ปิด</button>
+                <button type="button" class="btn-blue" onclick="generateNewRoom()">🎲 สุ่มห้องใหม่</button>
+                <button type="button" onclick="joinInputRoom()">✅ เข้าห้องนี้</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal อ่านข้อความทั้งหมดในห้อง -->
+    <div id="list-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="list-modal-title">
+        <div class="modal-card">
+            <h3 id="list-modal-title">📜 ข้อความทั้งหมดบนต้นไม้ (<span id="list-modal-count">0</span> ใบ)</h3>
+            <input type="text" id="search-notes-input" placeholder="🔍 ค้นหาข้อความหรือชื่อผู้เขียน..." style="width: 100%; margin-bottom: 6px;" oninput="renderAllNotesModalList()">
+            <div id="all-notes-list" class="all-notes-list"></div>
+            <div class="modal-actions">
+                <button type="button" class="btn-cancel" onclick="closeListModal()">ปิดหน้าต่าง</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal บันทึกรูปภาพสำหรับมือถือ / iPad / iPhone -->
+    <div id="image-modal" class="modal-overlay" role="dialog" aria-modal="true" aria-labelledby="image-modal-title">
+        <div class="modal-card">
+            <h3 id="image-modal-title">📸 บันทึกรูปภาพต้นไม้เรียบร้อย!</h3>
+            <p>ระบบดาวน์โหลดไฟล์ PNG ลงเครื่องให้แล้ว หากเปิดบน iPhone/iPad หรือในแอป สามารถ<b>กดค้างที่รูปภาพด้านล่างแล้วเลือก "บันทึกลงแอปรูปภาพ"</b> ได้ทันทีครับ</p>
+            <img id="exported-image-preview" src="" alt="ภาพต้นไม้แห่งข้อความ">
+            <div class="modal-actions">
+                <button type="button" class="btn-cancel" onclick="closeImageModal()">ปิดหน้าต่าง</button>
+                <a id="manual-download-link" href="#" download="message-tree.png" style="text-decoration:none; flex:1; display:flex;">
+                    <button type="button" class="btn-blue" style="width:100%;">⬇️ ดาวน์โหลดซ้ำ</button>
+                </a>
+            </div>
+        </div>
+    </div>
+
+    <header>
+        <div class="top-bar">
+            <div class="status-badges">
+                <span class="badge clickable" onclick="openFirebaseModal()" title="คลิกเพื่อตั้งค่าการเชื่อมต่อ Cloud ออนไลน์">
+                    <span class="dot-live" id="conn-dot"></span>
+                    <span id="conn-status">กำลังเชื่อมต่อ...</span>
+                </span>
+                <span class="badge clickable" onclick="openPresenceModal()" title="คลิกเพื่อดูรายชื่อผู้เล่นที่กำลังออนไลน์ในห้องนี้">
+                    👥 ออนไลน์ <strong id="online-count">1</strong> คน
+                </span>
+                <span class="badge" title="จำนวนข้อความบนต้นไม้">
+                    🍃 ข้อความ <strong id="note-count">0</strong> ใบ
+                </span>
+            </div>
+            <div class="top-actions">
+                <button type="button" class="icon-btn" onclick="openFirebaseModal()" title="ตั้งค่า Firebase Config สำหรับเล่นออนไลน์ข้ามเครื่อง">
+                    ☁️ เชื่อมต่อ
+                </button>
+                <button type="button" class="icon-btn" onclick="openListModal()" title="อ่านและค้นหาข้อความทั้งหมดในห้อง">
+                    📜 อ่านรวม
+                </button>
+                <button type="button" class="icon-btn" onclick="openRoomModal()" title="เปลี่ยนห้องหรือสร้างห้องใหม่">
+                    🏠 ห้อง: <span id="current-room-label">PUBLIC-TREE</span>
+                </button>
+                <button type="button" class="icon-btn highlight-share" onclick="copyShareLink()" title="คัดลอกลิงก์ชวนเพื่อนพร้อมการเชื่อมต่อเข้าห้องนี้ทันที">
+                    🔗 คัดลอกลิงก์ชวนเพื่อน
+                </button>
+                <button type="button" class="icon-btn" id="sound-toggle-btn" onclick="toggleSound()" title="เปิดหรือปิดเสียงประกอบ">
+                    🔊 เสียง: เปิด
+                </button>
+            </div>
+        </div>
+
+        <!-- แถบแจ้งเตือนหากยังไม่ได้เชื่อมต่อ Cloud -->
+        <div id="cloud-setup-banner">
+            <span>⚠️ ขณะนี้อยู่ในโหมดออฟไลน์เฉพาะเครื่อง (หากต้องการให้เพื่อน 30–100+ คนเล่นออนไลน์พร้อมกันข้ามเครื่อง กรุณาเชื่อมต่อ Firebase)</span>
+            <button type="button" onclick="openFirebaseModal()">⚙️ ตั้งค่าเชื่อมต่อออนไลน์</button>
+        </div>
+
+        <h1>🌳 ต้นไม้แห่งข้อความ (Fantasy Message Tree)</h1>
+        <p class="subtitle">พิมพ์ข้อความแล้วคลิกจุดแปะบนต้นไม้ • ลากย้าย ย่อ/ขยาย และเปลี่ยนทรงต้นไม้หรือฤดูเฉพาะเครื่องของคุณก่อนบันทึกรูปได้เลย!</p>
+
+        <!-- แถบเลือก 4 ลักษณะต้นไม้ + 6 ฤดูกาล + กลางวัน/กลางคืน (Local Only) -->
+        <div class="personalize-bars">
+            <!-- แถวลักษณะต้นไม้ 4 แบบ -->
+            <div class="season-bar" role="group" aria-label="เลือกลักษณะต้นไม้เฉพาะหน้าจอของคุณ">
+                <span class="season-label">🌲 ทรงต้นไม้:</span>
+                <button type="button" class="species-chip active" data-species="bonsai" onclick="selectTreeSpecies('bonsai')">
+                    1. บอนไซซุ้มราก
+                </button>
+                <button type="button" class="species-chip" data-species="ancient" onclick="selectTreeSpecies('ancient')">
+                    2. พฤกษาโบราณกิ่งกว้าง
+                </button>
+                <button type="button" class="species-chip" data-species="wisteria" onclick="selectTreeSpecies('wisteria')">
+                    3. ซากุระ/วิสทีเรียพริ้วไหว
+                </button>
+                <button type="button" class="species-chip" data-species="crystal" onclick="selectTreeSpecies('crystal')">
+                    4. พฤกษาคริสตัลและเห็ดเรืองแสง
+                </button>
+            </div>
+
+            <!-- แถวสีฤดูกาล 6 แบบ + กลางวัน/กลางคืน -->
+            <div class="season-bar" role="group" aria-label="เลือกธีมฤดูกาลและเวลาเฉพาะหน้าจอของคุณ">
+                <span class="season-label">🎨 ฤดู/แสง:</span>
+                <button type="button" class="season-chip active" data-season="autumn" onclick="selectLocalSeason('autumn')">
+                    <span class="swatch-dot" style="background: #f27a24;"></span> 🍁 ใบไม้ร่วง
+                </button>
+                <button type="button" class="season-chip" data-season="sakura" onclick="selectLocalSeason('sakura')">
+                    <span class="swatch-dot" style="background: #f48fb1;"></span> 🌸 ซากุระบาน
+                </button>
+                <button type="button" class="season-chip" data-season="crystal" onclick="selectLocalSeason('crystal')">
+                    <span class="swatch-dot" style="background: #38bdf8;"></span> 💎 พฤกษาผลึกฟ้า
+                </button>
+                <button type="button" class="season-chip" data-season="golden" onclick="selectLocalSeason('golden')">
+                    <span class="swatch-dot" style="background: #eab308;"></span> 🌻 ทุ่งทองคำ
+                </button>
+                <button type="button" class="season-chip" data-season="wisteria" onclick="selectLocalSeason('wisteria')">
+                    <span class="swatch-dot" style="background: #c084fc;"></span> 💜 วิสทีเรีย
+                </button>
+                <button type="button" class="season-chip" data-season="emerald" onclick="selectLocalSeason('emerald')">
+                    <span class="swatch-dot" style="background: #10b981;"></span> 🌿 มรกตฤดูฝน
+                </button>
+                <span class="day-night-divider"></span>
+                <button type="button" class="time-toggle-chip" id="time-toggle-btn" onclick="toggleDayNight()" title="สลับแสงกลางวันและกลางคืนเฉพาะหน้าจอของคุณ">
+                    ☀️ กลางวัน
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <!-- พื้นที่ต้นไม้ขนาดใหญ่ (#capture-area) รองรับ 30-100+ ป้าย -->
+    <div id="capture-area">
+        <div id="capture-watermark">🌳 ต้นไม้แห่งข้อความ • ห้อง <span id="watermark-room">PUBLIC-TREE</span> (<span id="watermark-season">ฤดูใบไม้ร่วง • กลางวัน</span>)</div>
+
+        <div id="tree-container" title="คลิกตรงจุดไหนบนต้นไม้ก็ได้เพื่อแปะข้อความ">
+            <!-- 1. งานศิลป์ต้นไม้สร้างสรรค์ละเอียดสูง (viewBox="0 0 1400 860") เปลี่ยนได้ 4 ลักษณะ -->
+            <svg id="fantasy-tree-svg" viewBox="0 0 1400 860" preserveAspectRatio="xMidYMax meet" aria-hidden="true">
+                <defs>
+                    <linearGradient id="barkMainGrad" x1="0%" y1="0%" x2="100%" y2="12%">
+                        <stop offset="0%" style="stop-color: var(--bark-light);" />
+                        <stop offset="46%" style="stop-color: var(--bark-mid);" />
+                        <stop offset="100%" style="stop-color: var(--bark-dark);" />
+                    </linearGradient>
+                    <linearGradient id="barkShadowGrad" x1="0%" y1="0%" x2="100%" y2="0%">
+                        <stop offset="0%" style="stop-color: var(--bark-mid);" />
+                        <stop offset="100%" style="stop-color: var(--bark-dark);" />
+                    </linearGradient>
+                    <linearGradient id="mossGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" style="stop-color: var(--moss-light);" />
+                        <stop offset="100%" style="stop-color: var(--moss-dark);" />
+                    </linearGradient>
+                    <linearGradient id="crystalGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+                        <stop offset="0%" style="stop-color: var(--crystal-light);" />
+                        <stop offset="100%" style="stop-color: var(--crystal-dark);" />
+                    </linearGradient>
+                    <radialGradient id="canopyBackGrad" cx="35%" cy="25%" r="75%">
+                        <stop offset="0%" style="stop-color: var(--canopy-mid);" />
+                        <stop offset="68%" style="stop-color: var(--canopy-shadow);" />
+                        <stop offset="100%" style="stop-color: var(--canopy-shadow);" />
+                    </radialGradient>
+                    <radialGradient id="canopyMidGrad" cx="30%" cy="20%" r="75%">
+                        <stop offset="0%" style="stop-color: var(--canopy-light);" />
+                        <stop offset="60%" style="stop-color: var(--canopy-mid);" />
+                        <stop offset="100%" style="stop-color: var(--canopy-shadow);" />
+                    </radialGradient>
+                    <radialGradient id="canopyTopGrad" cx="28%" cy="18%" r="72%">
+                        <stop offset="0%" style="stop-color: var(--canopy-highlight);" />
+                        <stop offset="54%" style="stop-color: var(--canopy-light);" />
+                        <stop offset="100%" style="stop-color: var(--canopy-mid);" />
+                    </radialGradient>
+                    <linearGradient id="veilGrad" x1="0%" y1="0%" x2="0%" y2="100%">
+                        <stop offset="0%" style="stop-color: var(--canopy-highlight); stop-opacity: 0.88;" />
+                        <stop offset="55%" style="stop-color: var(--canopy-light); stop-opacity: 0.42;" />
+                        <stop offset="100%" style="stop-color: var(--canopy-highlight); stop-opacity: 0;" />
+                    </linearGradient>
+                </defs>
+
+                <!-- กลุ่มงานศิลป์ต้นไม้ (วาดตามลักษณะที่เลือก 4 แบบ) -->
+                <g id="tree-artwork-layer"></g>
+            </svg>
+
+            <!-- 2. เลเยอร์ขบวนสติกเกอร์เดินจากขวาไปซ้ายด้านล่าง (z-index: 26) -->
+            <div id="sticker-parade-layer"></div>
+
+            <!-- 3. เลเยอร์ป้ายข้อความ (z-index: 20 อยู่เหนือต้นไม้ SVG) -->
+            <div id="notes-layer"></div>
+        </div>
+    </div>
+
+    <!-- แผงควบคุมด้านล่าง (แยก 2 แถวชัดเจน: แถวแปะข้อความ + แถวส่งสติกเกอร์เดินขบวน) -->
+    <div id="bottom-dock">
+        <!-- แถวที่ 1: แปะข้อความบนต้นไม้ (15 สีกระดาษ) -->
+        <div class="control-row">
+            <input type="text" id="msg-input" placeholder="เขียนคำอวยพรหรือความในใจ..." maxlength="90">
+            <input type="text" id="author-input" class="author-input" placeholder="ชื่อผู้เขียน" maxlength="15">
+            <select id="shape-select" aria-label="เลือกรูปทรงกระดาษ" title="เลือกรูปทรงป้ายข้อความ">
+                <option value="square">🟨 โพสต์อิท</option>
+                <option value="leaf">🍃 ใบไม้</option>
+                <option value="heart">❤️ หัวใจ</option>
+                <option value="lantern">🏮 โคมไฟ</option>
+            </select>
+            <select id="size-select" aria-label="เลือกขนาดเริ่มต้นของป้าย" title="เลือกขนาดป้ายข้อความ">
+                <option value="0.82">ขนาด: เล็ก</option>
+                <option value="1" selected>ขนาด: กลาง</option>
+                <option value="1.25">ขนาด: ใหญ่</option>
+            </select>
+            <select id="color-select" aria-label="เลือกสีกระดาษ 15 เฉดสี" title="เลือกสีกระดาษข้อความ">
+                <option value="#FFF9C4">1. เหลืองครีม</option>
+                <option value="#FFCDD2">2. ชมพูซากุระ</option>
+                <option value="#C8E6C9">3. เขียวมิ้นต์</option>
+                <option value="#BBDEFB">4. ฟ้าพาสเทล</option>
+                <option value="#E1BEE7">5. ม่วงลาเวนเดอร์</option>
+                <option value="#FFE0B2">6. ส้มพีช</option>
+                <option value="#F8BBD0">7. ชมพูบานเย็น</option>
+                <option value="#FFECB3">8. ทองแชมเปญ</option>
+                <option value="#B2EBF2">9. ฟ้าคราม</option>
+                <option value="#A7F3D0">10. เขียวมรกต</option>
+                <option value="#FECDD3">11. แดงกุหลาบ</option>
+                <option value="#FFFFFF">12. ขาวไข่มุก</option>
+                <option value="#D7CCC8">13. น้ำตาลคราฟท์</option>
+                <option value="#E2E8F0">14. เทาเงิน</option>
+                <option value="#1E1B4B">15. ดำมิดไนท์ (ตัวอักษรทอง)</option>
+            </select>
+            <button type="button" onclick="addRandomNote()">📌 แปะสุ่ม</button>
+            <button type="button" class="export-btn" onclick="exportTreeImage()">📸 บันทึกรูปภาพ</button>
+            <button type="button" class="clear-btn" onclick="clearNotes()">🗑️ ล้างทั้งหมด</button>
+        </div>
+
+        <!-- แถวที่ 2: ช่องส่งสติกเกอร์เดินขบวนด้านล่าง (เดินจากขวาไปซ้าย) -->
+        <div class="control-row parade-row">
+            <span class="parade-label">🐾 ขบวนสติกเกอร์เดินเล่น:</span>
+            <select id="parade-sticker-select" aria-label="เลือกตัวสติกเกอร์เดินขบวน" title="เลือกตัวสติกเกอร์ที่จะเดินจากขวาไปซ้าย">
+                <option value="🐕">🐕 น้องหมา</option>
+                <option value="🐈">🐈 น้องแมว</option>
+                <option value="🐇">🐇 กระต่ายน้อย</option>
+                <option value="🦊">🦊 จิ้งจอก</option>
+                <option value="🦌">🦌 กวางป่า</option>
+                <option value="🐼">🐼 หมีแพนด้า</option>
+                <option value="🦄">🦄 ยูนิคอร์น</option>
+                <option value="🐉">🐉 มังกรน้อย</option>
+                <option value="🦉">🦉 นกฮูก</option>
+                <option value="🐧">🐧 เพนกวิน</option>
+                <option value="🧚‍♀️">🧚‍♀️ ภูตน้อย</option>
+                <option value="🌻">🌻 ดอกไม้เดินได้</option>
+            </select>
+            <input type="text" id="parade-msg-input" class="sticker-msg-input" placeholder="ข้อความติดหัวสติกเกอร์ (ไม่ใส่ก็ได้)" maxlength="25">
+            <button type="button" class="parade-btn" onclick="sendWalkingSticker()">🚶 ส่งสติกเกอร์เดิน</button>
+        </div>
+    </div>
+
+    <!-- Firebase Modular SDK (Firestore & Auth) -->
+    <script type="module">
+        import { initializeApp, getApps, deleteApp } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-app.js";
+        import { getAuth, signInAnonymously, signInWithCustomToken } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-auth.js";
+        import {
+            getFirestore,
+            collection,
+            doc,
+            setDoc,
+            updateDoc,
+            deleteDoc,
+            onSnapshot,
+            increment
+        } from "https://www.gstatic.com/firebasejs/11.6.1/firebase-firestore.js";
+
+        // =========================================================
+        // 1. ชุดข้อมูลธีมฤดูกาล 6 แบบ + กลางวัน/กลางคืน (Local Only)
+        // =========================================================
+        const SEASONS = {
+            autumn: {
+                name: 'ฤดูใบไม้ร่วง',
+                particleType: 'leaf',
+                day: {
+                    '--bg-top': '#fde4cf', '--bg-mid': '#ffcfd2', '--bg-bottom': '#f1c0e8',
+                    '--ground-top': '#7f9149', '--ground-bottom': '#3d4c22',
+                    '--mountain-far': '#d8b4e2', '--mountain-mid': '#a685b8', '--mountain-near': '#64783a',
+                    '--title-color': '#4a1d11', '--subtitle-color': '#6d3121',
+                    '--bark-dark': '#3b2114', '--bark-mid': '#73462e', '--bark-light': '#d49b72',
+                    '--moss-light': '#a7c957', '--moss-dark': '#4f6f28',
+                    '--crystal-light': '#bae6fd', '--crystal-dark': '#38bdf8',
+                    '--canopy-shadow': '#7f1d1d', '--canopy-mid': '#d9481e', '--canopy-light': '#f97316', '--canopy-highlight': '#fbbf24',
+                    '--glow-filter': 'drop-shadow(0 16px 32px rgba(194, 65, 12, 0.28))',
+                    '--particle-color-1': '#ea580c', '--particle-color-2': '#f59e0b'
+                },
+                night: {
+                    '--bg-top': '#12091c', '--bg-mid': '#2b1338', '--bg-bottom': '#4c1d4b',
+                    '--ground-top': '#2a3324', '--ground-bottom': '#11170e',
+                    '--mountain-far': '#3b1e54', '--mountain-mid': '#261438', '--mountain-near': '#1c2419',
+                    '--title-color': '#fed7aa', '--subtitle-color': '#fdba74',
+                    '--bark-dark': '#1f100a', '--bark-mid': '#4a291a', '--bark-light': '#9a5b3c',
+                    '--moss-light': '#65a30d', '--moss-dark': '#263b0f',
+                    '--crystal-light': '#e0f2fe', '--crystal-dark': '#38bdf8',
+                    '--canopy-shadow': '#450a0a', '--canopy-mid': '#9a3412', '--canopy-light': '#ea580c', '--canopy-highlight': '#fde047',
+                    '--glow-filter': 'drop-shadow(0 0 36px rgba(249, 115, 22, 0.5))',
+                    '--particle-color-1': '#fb923c', '--particle-color-2': '#fde047'
+                }
+            },
+            sakura: {
+                name: 'ซากุระบาน',
+                particleType: 'petal',
+                day: {
+                    '--bg-top': '#e0f2fe', '--bg-mid': '#fce7f3', '--bg-bottom': '#fbcfe8',
+                    '--ground-top': '#86a869', '--ground-bottom': '#436132',
+                    '--mountain-far': '#cbd5e1', '--mountain-mid': '#94a3b8', '--mountain-near': '#65884b',
+                    '--title-color': '#831843', '--subtitle-color': '#9d174d',
+                    '--bark-dark': '#3f2822', '--bark-mid': '#6b493f', '--bark-light': '#b58d80',
+                    '--moss-light': '#a3c965', '--moss-dark': '#4d7330',
+                    '--crystal-light': '#fbcfe8', '--crystal-dark': '#f472b6',
+                    '--canopy-shadow': '#be185d', '--canopy-mid': '#f472b6', '--canopy-light': '#f9a8d4', '--canopy-highlight': '#fff1f2',
+                    '--glow-filter': 'drop-shadow(0 16px 32px rgba(236, 72, 153, 0.26))',
+                    '--particle-color-1': '#f472b6', '--particle-color-2': '#fbcfe8'
+                },
+                night: {
+                    '--bg-top': '#0f1029', '--bg-mid': '#241842', '--bg-bottom': '#432359',
+                    '--ground-top': '#243628', '--ground-bottom': '#0f1a12',
+                    '--mountain-far': '#31255a', '--mountain-mid': '#20183d', '--mountain-near': '#19291e',
+                    '--title-color': '#fbcfe8', '--subtitle-color': '#f9a8d4',
+                    '--bark-dark': '#211414', '--bark-mid': '#4a2f33', '--bark-light': '#8c6268',
+                    '--moss-light': '#4ade80', '--moss-dark': '#166534',
+                    '--crystal-light': '#fce7f3', '--crystal-dark': '#ec4899',
+                    '--canopy-shadow': '#831843', '--canopy-mid': '#db2777', '--canopy-light': '#f472b6', '--canopy-highlight': '#fce7f3',
+                    '--glow-filter': 'drop-shadow(0 0 36px rgba(244, 114, 182, 0.54))',
+                    '--particle-color-1': '#f472b6', '--particle-color-2': '#fdf2f8'
+                }
+            },
+            crystal: {
+                name: 'พฤกษาผลึกฟ้า',
+                particleType: 'spark',
+                day: {
+                    '--bg-top': '#bae6fd', '--bg-mid': '#e0f2fe', '--bg-bottom': '#ccfbf1',
+                    '--ground-top': '#4d9c82', '--ground-bottom': '#1e5647',
+                    '--mountain-far': '#99f6e4', '--mountain-mid': '#38bdf8', '--mountain-near': '#2e7d67',
+                    '--title-color': '#0c4a6e', '--subtitle-color': '#0369a1',
+                    '--bark-dark': '#1e293b', '--bark-mid': '#475569', '--bark-light': '#94a3b8',
+                    '--moss-light': '#5eead4', '--moss-dark': '#0d9488',
+                    '--crystal-light': '#e0f2fe', '--crystal-dark': '#0284c7',
+                    '--canopy-shadow': '#0369a1', '--canopy-mid': '#0284c7', '--canopy-light': '#38bdf8', '--canopy-highlight': '#e0f2fe',
+                    '--glow-filter': 'drop-shadow(0 16px 32px rgba(2, 132, 199, 0.3))',
+                    '--particle-color-1': '#0284c7', '--particle-color-2': '#38bdf8'
+                },
+                night: {
+                    '--bg-top': '#050d1a', '--bg-mid': '#0b1d33', '--bg-bottom': '#13314d',
+                    '--ground-top': '#123832', '--ground-bottom': '#061a17',
+                    '--mountain-far': '#153e59', '--mountain-mid': '#0d283d', '--mountain-near': '#0b2924',
+                    '--title-color': '#e0f2fe', '--subtitle-color': '#7dd3fc',
+                    '--bark-dark': '#0f172a', '--bark-mid': '#334155', '--bark-light': '#64748b',
+                    '--moss-light': '#2dd4bf', '--moss-dark': '#0f766e',
+                    '--crystal-light': '#f0f9ff', '--crystal-dark': '#38bdf8',
+                    '--canopy-shadow': '#075985', '--canopy-mid': '#0284c7', '--canopy-light': '#38bdf8', '--canopy-highlight': '#bae6fd',
+                    '--glow-filter': 'drop-shadow(0 0 38px rgba(56, 189, 248, 0.58))',
+                    '--particle-color-1': '#38bdf8', '--particle-color-2': '#e0f2fe'
+                }
+            },
+            golden: {
+                name: 'ทุ่งทองคำ',
+                particleType: 'leaf',
+                day: {
+                    '--bg-top': '#fef3c7', '--bg-mid': '#fde68a', '--bg-bottom': '#fcd34d',
+                    '--ground-top': '#849646', '--ground-bottom': '#465420',
+                    '--mountain-far': '#fcd34d', '--mountain-mid': '#d97706', '--mountain-near': '#657830',
+                    '--title-color': '#78350f', '--subtitle-color': '#92400e',
+                    '--bark-dark': '#3b2416', '--bark-mid': '#6b442a', '--bark-light': '#b5835a',
+                    '--moss-light': '#a3be4c', '--moss-dark': '#526b25',
+                    '--crystal-light': '#fef08a', '--crystal-dark': '#eab308',
+                    '--canopy-shadow': '#92400e', '--canopy-mid': '#d97706', '--canopy-light': '#f59e0b', '--canopy-highlight': '#fef08a',
+                    '--glow-filter': 'drop-shadow(0 16px 32px rgba(217, 119, 6, 0.3))',
+                    '--particle-color-1': '#d97706', '--particle-color-2': '#facc15'
+                },
+                night: {
+                    '--bg-top': '#140f07', '--bg-mid': '#291d0e', '--bg-bottom': '#422e14',
+                    '--ground-top': '#2b3317', '--ground-bottom': '#121709',
+                    '--mountain-far': '#453015', '--mountain-mid': '#2e1f0d', '--mountain-near': '#1f2610',
+                    '--title-color': '#fef08a', '--subtitle-color': '#fde047',
+                    '--bark-dark': '#1f1209', '--bark-mid': '#4a2e19', '--bark-light': '#8c5c38',
+                    '--moss-light': '#84cc16', '--moss-dark': '#365314',
+                    '--crystal-light': '#fef9c3', '--crystal-dark': '#facc15',
+                    '--canopy-shadow': '#78350f', '--canopy-mid': '#b45309', '--canopy-light': '#f59e0b', '--canopy-highlight': '#fef9c3',
+                    '--glow-filter': 'drop-shadow(0 0 36px rgba(250, 204, 21, 0.52))',
+                    '--particle-color-1': '#facc15', '--particle-color-2': '#fef9c3'
+                }
+            },
+            wisteria: {
+                name: 'วิสทีเรีย',
+                particleType: 'petal',
+                day: {
+                    '--bg-top': '#ede9fe', '--bg-mid': '#f3e8ff', '--bg-bottom': '#fae8ff',
+                    '--ground-top': '#759163', '--ground-bottom': '#3b5230',
+                    '--mountain-far': '#d8b4fe', '--mountain-mid': '#a855f7', '--mountain-near': '#577348',
+                    '--title-color': '#4c1d95', '--subtitle-color': '#6b21a8',
+                    '--bark-dark': '#362238', '--bark-mid': '#614366', '--bark-light': '#a682ad',
+                    '--moss-light': '#97bf6b', '--moss-dark': '#496b2e',
+                    '--crystal-light': '#e9d5ff', '--crystal-dark': '#a855f7',
+                    '--canopy-shadow': '#581c87', '--canopy-mid': '#9333ea', '--canopy-light': '#c084fc', '--canopy-highlight': '#f3e8ff',
+                    '--glow-filter': 'drop-shadow(0 16px 32px rgba(147, 51, 234, 0.28))',
+                    '--particle-color-1': '#a855f7', '--particle-color-2': '#e879f9'
+                },
+                night: {
+                    '--bg-top': '#0d071a', '--bg-mid': '#1e1038', '--bg-bottom': '#34195e',
+                    '--ground-top': '#213023', '--ground-bottom': '#0c140e',
+                    '--mountain-far': '#3b1d6e', '--mountain-mid': '#241145', '--mountain-near': '#172419',
+                    '--title-color': '#f3e8ff', '--subtitle-color': '#d8b4fe',
+                    '--bark-dark': '#1c1021', '--bark-mid': '#3f2747', '--bark-light': '#7a5287',
+                    '--moss-light': '#4ade80', '--moss-dark': '#14532d',
+                    '--crystal-light': '#f3e8ff', '--crystal-dark': '#c084fc',
+                    '--canopy-shadow': '#4c1d95', '--canopy-mid': '#7e22ce', '--canopy-light': '#c084fc', '--canopy-highlight': '#fae8ff',
+                    '--glow-filter': 'drop-shadow(0 0 36px rgba(192, 132, 252, 0.56))',
+                    '--particle-color-1': '#c084fc', '--particle-color-2': '#f5d0fe'
+                }
+            },
+            emerald: {
+                name: 'มรกตฤดูฝน',
+                particleType: 'leaf',
+                day: {
+                    '--bg-top': '#d1fae5', '--bg-mid': '#ecfdf5', '--bg-bottom': '#cffafe',
+                    '--ground-top': '#3f8f5c', '--ground-bottom': '#194d2e',
+                    '--mountain-far': '#a7f3d0', '--mountain-mid': '#34d399', '--mountain-near': '#276e43',
+                    '--title-color': '#064e3b', '--subtitle-color': '#065f46',
+                    '--bark-dark': '#2d2318', '--bark-mid': '#594632', '--bark-light': '#9e8060',
+                    '--moss-light': '#6ee7b7', '--moss-dark': '#059669',
+                    '--crystal-light': '#a7f3d0', '--crystal-dark': '#10b981',
+                    '--canopy-shadow': '#065f46', '--canopy-mid': '#059669', '--canopy-light': '#34d399', '--canopy-highlight': '#d1fae5',
+                    '--glow-filter': 'drop-shadow(0 16px 32px rgba(16, 185, 129, 0.28))',
+                    '--particle-color-1': '#10b981', '--particle-color-2': '#6ee7b7'
+                },
+                night: {
+                    '--bg-top': '#04120e', '--bg-mid': '#0a261e', '--bg-bottom': '#113d30',
+                    '--ground-top': '#123828', '--ground-bottom': '#061710',
+                    '--mountain-far': '#114234', '--mountain-mid': '#0a2b22', '--mountain-near': '#08241c',
+                    '--title-color': '#d1fae5', '--subtitle-color': '#6ee7b7',
+                    '--bark-dark': '#17110b', '--bark-mid': '#36291c', '--bark-light': '#6b533b',
+                    '--moss-light': '#34d399', '--moss-dark': '#065f46',
+                    '--crystal-light': '#ecfdf5', '--crystal-dark': '#10b981',
+                    '--canopy-shadow': '#064e3b', '--canopy-mid': '#047857', '--canopy-light': '#10b981', '--canopy-highlight': '#a7f3d0',
+                    '--glow-filter': 'drop-shadow(0 0 38px rgba(16, 185, 129, 0.55))',
+                    '--particle-color-1': '#34d399', '--particle-color-2': '#a7f3d0'
+                }
+            }
+        };
+
+        // =========================================================
+        // 2. งานศิลป์ต้นไม้ 4 ลักษณะละเอียดสูง (viewBox="0 0 1400 860")
+        // =========================================================
+        const TREE_ARTWORKS = {
+            bonsai: `
+                <!-- 1. บอนไซบิดเกลียวซุ้มราก (Twisted Arching Bonsai) -->
+                <g opacity="0.96">
+                    <path d="M 140 410 C 40 388, 30 255, 138 212 C 160 112, 325 78, 435 135 C 525 36, 755 36, 845 135 C 965 75, 1140 124, 1152 232 C 1272 275, 1262 415, 1130 438 C 1025 490, 850 470, 715 436 C 562 480, 290 480, 140 410 Z" fill="url(#canopyBackGrad)" />
+                    <path d="M 38 518 C -25 498, -30 405, 54 376 C 92 314, 205 314, 248 378 C 314 408, 288 506, 196 520 Z" fill="url(#canopyBackGrad)" />
+                    <path d="M 1075 488 C 1045 416, 1130 352, 1228 380 C 1312 388, 1348 478, 1264 518 C 1190 550, 1100 532, 1075 488 Z" fill="url(#canopyBackGrad)" />
+                </g>
+                <g>
+                    <path class="sway-veil" d="M 155 395 C 142 455, 145 520, 160 572 C 175 520, 178 455, 165 395 Z" fill="url(#veilGrad)" />
+                    <path class="sway-veil-delay" d="M 215 415 C 200 490, 205 570, 222 632 C 238 570, 242 490, 228 415 Z" fill="url(#veilGrad)" />
+                    <path class="sway-veil" d="M 1035 400 C 1022 470, 1026 545, 1042 602 C 1058 545, 1062 470, 1048 400 Z" fill="url(#veilGrad)" />
+                    <path class="sway-veil-delay" d="M 1165 420 C 1152 490, 1156 565, 1172 622 C 1188 565, 1192 490, 1178 420 Z" fill="url(#veilGrad)" />
+                </g>
+                <g>
+                    <ellipse cx="700" cy="822" rx="510" ry="30" fill="rgba(0, 0, 0, 0.28)" />
+                    <path d="M 225 820 C 360 772, 515 745, 700 745 C 885 745, 1040 772, 1175 820 C 1005 838, 395 838, 225 820 Z" fill="url(#mossGrad)" />
+                    <path d="M 270 814 C 390 780, 530 760, 695 760 C 845 760, 975 780, 1095 812 C 955 802, 445 802, 270 814 Z" fill="var(--moss-light)" opacity="0.55" />
+                    <polygon points="365,812 384,752 402,762 410,812" fill="url(#crystalGrad)" />
+                    <polygon points="384,752 402,762 395,812 380,812" fill="rgba(255,255,255,0.45)" />
+                    <polygon points="400,812 418,772 434,780 438,812" fill="url(#crystalGrad)" opacity="0.9" />
+                    <polygon points="955,814 974,762 992,770 998,814" fill="url(#crystalGrad)" />
+                    <polygon points="988,814 1004,780 1018,788 1022,814" fill="url(#crystalGrad)" opacity="0.88" />
+                </g>
+                <g>
+                    <path d="M 442 816 C 488 762, 532 710, 575 672 C 608 642, 560 575, 540 500 C 518 415, 622 375, 640 308 C 654 258, 552 230, 465 212 L 484 188 C 578 202, 670 230, 708 274 C 752 224, 842 192, 945 182 L 955 208 C 872 220, 795 255, 762 308 C 828 314, 912 330, 995 362 L 982 382 C 904 356, 825 346, 760 354 C 738 425, 802 504, 780 595 C 762 670, 824 742, 950 812 C 885 820, 834 798, 780 752 C 745 720, 718 684, 694 684 C 668 684, 640 724, 600 760 C 550 804, 496 820, 442 816 Z" fill="url(#barkMainGrad)" />
+                    <path d="M 604 780 C 642 724, 668 696, 694 696 C 720 696, 748 724, 788 780 C 726 788, 665 788, 604 780 Z" fill="var(--ground-bottom)" opacity="0.72" />
+                    <path d="M 556 512 C 462 480, 355 450, 250 415 L 265 394 C 370 426, 470 450, 565 480 Z" fill="url(#barkMainGrad)" />
+                    <path d="M 562 384 C 468 348, 380 314, 295 280 L 310 262 C 390 294, 474 326, 570 356 Z" fill="url(#barkMainGrad)" />
+                    <path d="M 772 480 C 868 448, 972 420, 1082 396 L 1068 418 C 964 442, 864 468, 776 504 Z" fill="url(#barkMainGrad)" />
+                    <path class="biolum-vein" d="M 542 780 C 596 734, 640 672, 648 612 C 655 550, 594 498, 605 434 C 616 384, 685 340, 694 280" fill="none" stroke="var(--canopy-highlight)" stroke-width="3" stroke-linecap="round" />
+                    <path d="M 474 812 C 518 778, 562 748, 594 712 C 610 740, 586 780, 546 814 Z" fill="url(#mossGrad)" opacity="0.95" />
+                    <path d="M 772 740 C 805 714, 842 744, 902 802 C 852 812, 805 784, 772 740 Z" fill="url(#mossGrad)" opacity="0.95" />
+                </g>
+                <g>
+                    <path d="M 52 492 C 4 472, 14 390, 86 372 C 122 310, 234 304, 280 366 C 346 382, 352 470, 280 496 C 210 520, 116 516, 52 492 Z" fill="url(#canopyMidGrad)" />
+                    <path d="M 136 358 C 70 332, 78 224, 172 202 C 212 126, 350 120, 410 194 C 485 214, 492 316, 410 354 C 330 384, 210 384, 136 358 Z" fill="url(#canopyMidGrad)" />
+                    <path d="M 400 236 C 356 186, 392 92, 492 84 C 546 18, 705 18, 764 86 C 854 102, 886 194, 818 242 C 720 280, 502 280, 400 236 Z" fill="url(#canopyMidGrad)" />
+                    <path d="M 780 330 C 726 280, 764 182, 866 172 C 925 114, 1066 122, 1114 200 C 1192 226, 1198 330, 1114 360 C 1025 388, 864 376, 780 330 Z" fill="url(#canopyMidGrad)" />
+                    <path d="M 960 466 C 916 420, 952 340, 1038 334 C 1092 292, 1198 310, 1230 372 C 1282 402, 1265 480, 1192 498 C 1114 514, 1014 504, 960 466 Z" fill="url(#canopyMidGrad)" />
+                </g>
+                <g>
+                    <path d="M 480 152 C 456 104, 508 50, 584 50 C 636 14, 740 24, 768 80 C 820 102, 810 166, 748 178 C 664 195, 534 188, 480 152 Z" fill="url(#canopyTopGrad)" />
+                    <path d="M 155 276 C 125 232, 166 166, 246 162 C 292 122, 382 138, 408 190 C 450 214, 434 278, 378 292 C 300 306, 202 300, 155 276 Z" fill="url(#canopyTopGrad)" />
+                    <path d="M 75 438 C 54 406, 86 358, 146 358 C 185 332, 252 344, 272 382 C 300 400, 288 444, 244 452 C 185 462, 110 456, 75 438 Z" fill="url(#canopyTopGrad)" />
+                    <path d="M 844 248 C 818 206, 864 150, 940 150 C 990 118, 1076 136, 1100 185 C 1140 206, 1126 262, 1072 276 C 1000 292, 896 282, 844 248 Z" fill="url(#canopyTopGrad)" />
+                    <path d="M 992 416 C 972 384, 1006 344, 1065 344 C 1104 322, 1172 334, 1192 368 C 1218 386, 1202 426, 1160 434 C 1104 444, 1026 438, 992 416 Z" fill="url(#canopyTopGrad)" />
+                </g>
+                <g transform="translate(290, 778)" opacity="0.88">
+                    <circle cx="8" cy="5" r="4" fill="var(--bark-dark)" />
+                    <path d="M 3 10 L 13 10 L 16 24 L 11 24 L 9 17 L 7 24 L 2 24 Z" fill="var(--bark-dark)" />
+                    <line x1="17" y1="3" x2="15" y2="24" stroke="var(--bark-dark)" stroke-width="1.6" stroke-linecap="round" />
+                    <circle cx="17" cy="3" r="2.2" fill="var(--canopy-highlight)" class="biolum-vein" />
+                </g>
+            `,
+            ancient: `
+                <!-- 2. พฤกษาโบราณกิ่งก้านกว้าง (Grand Ancient Canopy) -->
+                <g opacity="0.96">
+                    <path d="M 80 390 C -10 350, 10 180, 160 155 C 230 60, 450 40, 560 100 C 660 20, 840 20, 940 100 C 1060 40, 1260 70, 1310 175 C 1410 220, 1390 380, 1270 405 C 1080 460, 880 430, 700 410 C 520 430, 280 450, 80 390 Z" fill="url(#canopyBackGrad)" />
+                </g>
+                <g>
+                    <path d="M 220 380 Q 380 490 540 365" fill="none" stroke="url(#veilGrad)" stroke-width="5" stroke-linecap="round" />
+                    <path d="M 860 365 Q 1020 490 1180 380" fill="none" stroke="url(#veilGrad)" stroke-width="5" stroke-linecap="round" />
+                    <path class="sway-veil" d="M 290 390 C 278 465, 282 540, 295 600 C 308 540, 312 465, 300 390 Z" fill="url(#veilGrad)" />
+                    <path class="sway-veil-delay" d="M 410 385 C 398 475, 402 560, 415 625 C 428 560, 432 475, 420 385 Z" fill="url(#veilGrad)" />
+                    <path class="sway-veil" d="M 980 385 C 968 475, 972 560, 985 625 C 998 560, 1002 475, 990 385 Z" fill="url(#veilGrad)" />
+                    <path class="sway-veil-delay" d="M 1100 390 C 1088 465, 1092 540, 1105 600 C 1118 540, 1122 465, 1110 390 Z" fill="url(#veilGrad)" />
+                </g>
+                <g>
+                    <ellipse cx="700" cy="825" rx="560" ry="30" fill="rgba(0,0,0,0.28)" />
+                    <path d="M 160 822 C 340 765, 520 740, 700 740 C 880 740, 1060 765, 1240 822 Z" fill="url(#mossGrad)" />
+                </g>
+                <g>
+                    <path d="M 380 820 C 480 760, 560 690, 585 570 C 605 470, 565 390, 460 320 C 350 250, 220 220, 130 205 L 145 180 C 250 192, 390 220, 520 285 C 585 210, 635 145, 675 95 L 725 95 C 765 145, 815 210, 880 285 C 1010 220, 1150 192, 1255 180 L 1270 205 C 1180 220, 1050 250, 940 320 C 835 390, 795 470, 815 570 C 840 690, 920 760, 1020 820 C 890 828, 790 795, 700 755 C 610 795, 510 828, 380 820 Z" fill="url(#barkMainGrad)" />
+                    <path d="M 550 818 C 610 765, 655 725, 700 725 C 745 725, 790 765, 850 818 Z" fill="url(#barkShadowGrad)" />
+                    <path class="biolum-vein" d="M 650 750 C 640 620, 660 460, 700 220" fill="none" stroke="var(--canopy-highlight)" stroke-width="4" stroke-linecap="round" />
+                    <path class="biolum-vein" d="M 750 750 C 760 620, 740 460, 700 220" fill="none" stroke="var(--canopy-highlight)" stroke-width="4" stroke-linecap="round" />
+                </g>
+                <g>
+                    <path d="M 60 340 C 10 290, 45 185, 165 170 C 235 100, 415 105, 480 185 C 545 230, 520 335, 420 355 C 290 380, 130 375, 60 340 Z" fill="url(#canopyMidGrad)" />
+                    <path d="M 410 230 C 370 160, 445 65, 585 60 C 655 15, 745 15, 815 60 C 955 65, 1030 160, 990 230 C 900 285, 500 285, 410 230 Z" fill="url(#canopyMidGrad)" />
+                    <path d="M 920 355 C 880 335, 855 230, 920 185 C 985 105, 1165 100, 1235 170 C 1355 185, 1390 290, 1340 340 C 1270 375, 1110 380, 920 355 Z" fill="url(#canopyMidGrad)" />
+                </g>
+                <g>
+                    <path d="M 110 265 C 85 220, 135 155, 235 155 C 295 115, 405 125, 440 175 C 485 205, 465 268, 395 282 C 295 298, 165 292, 110 265 Z" fill="url(#canopyTopGrad)" />
+                    <path d="M 475 150 C 455 95, 525 35, 635 35 C 685 10, 715 10, 765 35 C 875 35, 945 95, 925 150 C 865 195, 535 195, 475 150 Z" fill="url(#canopyTopGrad)" />
+                    <path d="M 960 282 C 935 268, 915 205, 960 175 C 995 125, 1105 115, 1165 155 C 1265 155, 1315 220, 1290 265 C 1235 292, 1105 298, 960 282 Z" fill="url(#canopyTopGrad)" />
+                </g>
+            `,
+            wisteria: `
+                <!-- 3. ซากุระ/วิสทีเรียพริ้วไหว (Weeping Blossom & Wisteria) -->
+                <g opacity="0.95">
+                    <path d="M 180 350 C 120 260, 210 120, 380 110 C 490 35, 760 30, 910 105 C 1090 100, 1240 210, 1220 340 C 1190 430, 980 410, 780 360 C 560 410, 260 430, 180 350 Z" fill="url(#canopyBackGrad)" />
+                </g>
+                <g>
+                    <path class="sway-veil" d="M 210 320 C 185 430, 190 540, 218 640 C 245 540, 250 430, 225 320 Z" fill="url(#canopyMidGrad)" />
+                    <path class="sway-veil-delay" d="M 285 330 C 258 460, 264 590, 294 700 C 324 590, 330 460, 303 330 Z" fill="url(#canopyTopGrad)" />
+                    <path class="sway-veil" d="M 370 300 C 346 415, 352 525, 378 615 C 404 525, 410 415, 386 300 Z" fill="url(#canopyMidGrad)" />
+                    <path class="sway-veil-delay" d="M 465 265 C 445 365, 450 460, 472 535 C 494 460, 498 365, 478 265 Z" fill="url(#veilGrad)" />
+                    <path class="sway-veil" d="M 885 275 C 862 390, 868 505, 895 595 C 922 505, 928 390, 905 275 Z" fill="url(#canopyMidGrad)" />
+                    <path class="sway-veil-delay" d="M 985 305 C 958 435, 964 565, 994 675 C 1024 565, 1030 435, 1003 305 Z" fill="url(#canopyTopGrad)" />
+                    <path class="sway-veil" d="M 1085 325 C 1060 445, 1066 565, 1094 660 C 1122 565, 1128 445, 1103 325 Z" fill="url(#canopyMidGrad)" />
+                    <path class="sway-veil-delay" d="M 1175 335 C 1152 440, 1158 540, 1182 620 C 1206 540, 1212 440, 1189 335 Z" fill="url(#veilGrad)" />
+                </g>
+                <g>
+                    <ellipse cx="660" cy="825" rx="460" ry="26" fill="rgba(0,0,0,0.25)" />
+                    <path d="M 280 822 C 420 768, 560 745, 700 745 C 840 745, 960 772, 1080 822 Z" fill="url(#mossGrad)" />
+                </g>
+                <g>
+                    <path d="M 520 820 C 580 730, 635 615, 625 480 C 615 350, 515 270, 390 250 C 310 238, 240 255, 185 280 L 198 258 C 265 225, 355 205, 455 218 C 565 232, 655 295, 690 365 C 745 275, 865 215, 1015 225 C 1105 232, 1175 265, 1225 305 L 1208 324 C 1155 288, 1085 262, 1005 260 C 885 255, 785 315, 735 415 C 695 495, 715 625, 775 745 C 805 795, 845 815, 895 820 C 785 825, 635 825, 520 820 Z" fill="url(#barkMainGrad)" />
+                    <path class="biolum-vein" d="M 605 790 C 655 680, 680 540, 675 400 C 725 310, 845 245, 995 242" fill="none" stroke="var(--canopy-highlight)" stroke-width="3.2" stroke-linecap="round" />
+                </g>
+                <g>
+                    <path d="M 165 285 C 125 235, 185 155, 305 155 C 385 105, 535 115, 595 180 C 655 105, 845 95, 945 165 C 1075 155, 1205 225, 1195 300 C 1145 355, 985 340, 865 295 C 765 325, 625 325, 525 290 C 405 335, 225 340, 165 285 Z" fill="url(#canopyMidGrad)" />
+                    <path d="M 225 235 C 205 190, 265 135, 365 135 C 435 100, 545 110, 585 160 C 645 95, 815 85, 895 145 C 1005 140, 1105 195, 1095 255 C 1035 295, 915 280, 825 245 C 735 270, 615 270, 535 240 C 435 275, 275 280, 225 235 Z" fill="url(#canopyTopGrad)" />
+                </g>
+            `,
+            crystal: `
+                <!-- 4. พฤกษาคริสตัลและเห็ดเรืองแสง (Luminous Crystal & Mushroom Tree) -->
+                <g opacity="0.96">
+                    <ellipse cx="700" cy="240" rx="480" ry="185" fill="url(#canopyBackGrad)" opacity="0.55" />
+                </g>
+                <g>
+                    <ellipse cx="700" cy="825" rx="490" ry="28" fill="rgba(0,0,0,0.28)" />
+                    <path d="M 240 822 C 390 770, 540 748, 700 748 C 860 748, 1010 770, 1160 822 Z" fill="url(#mossGrad)" />
+                </g>
+                <g>
+                    <path d="M 480 820 C 530 710, 580 590, 550 450 C 520 320, 410 260, 310 230 L 330 205 C 445 235, 560 300, 605 420 C 645 310, 675 210, 685 130 L 725 130 C 735 210, 765 310, 805 420 C 850 300, 965 235, 1080 205 L 1100 230 C 1000 260, 890 320, 860 450 C 830 590, 880 710, 930 820 Z" fill="url(#barkMainGrad)" />
+                    <polygon points="700,480 745,580 700,740 655,580" fill="url(#crystalGrad)" />
+                    <polygon points="700,480 745,580 700,740" fill="rgba(255,255,255,0.35)" />
+                    <polygon points="440,818 465,720 495,735 505,818" fill="url(#crystalGrad)" />
+                    <polygon points="905,818 925,730 955,745 965,818" fill="url(#crystalGrad)" />
+                </g>
+                <g>
+                    <path d="M 140 270 C 160 150, 360 140, 440 245 C 350 280, 220 285, 140 270 Z" fill="url(#canopyMidGrad)" />
+                    <path d="M 165 255 C 190 175, 340 165, 415 240 C 335 262, 230 265, 165 255 Z" fill="url(#canopyTopGrad)" />
+                    <ellipse cx="290" cy="266" rx="145" ry="22" fill="var(--canopy-highlight)" opacity="0.85" />
+
+                    <path d="M 430 185 C 470 40, 930 40, 970 185 C 830 235, 570 235, 430 185 Z" fill="url(#canopyMidGrad)" />
+                    <path d="M 475 168 C 520 65, 880 65, 925 168 C 805 205, 595 205, 475 168 Z" fill="url(#canopyTopGrad)" />
+                    <ellipse cx="700" cy="182" rx="260" ry="30" fill="var(--canopy-highlight)" opacity="0.88" />
+
+                    <path d="M 960 245 C 1040 140, 1240 150, 1260 270 C 1180 285, 1050 280, 960 245 Z" fill="url(#canopyMidGrad)" />
+                    <path d="M 985 240 C 1060 165, 1210 175, 1235 255 C 1170 265, 1065 262, 985 240 Z" fill="url(#canopyTopGrad)" />
+                    <ellipse cx="1110" cy="266" rx="145" ry="22" fill="var(--canopy-highlight)" opacity="0.85" />
+
+                    <path d="M 270 395 C 300 315, 470 315, 515 390 C 440 415, 340 415, 270 395 Z" fill="url(#canopyTopGrad)" />
+                    <path d="M 885 390 C 930 315, 1100 315, 1130 395 C 1060 415, 960 415, 885 390 Z" fill="url(#canopyTopGrad)" />
+                </g>
+                <g fill="var(--canopy-highlight)" class="biolum-vein">
+                    <line x1="230" y1="275" x2="230" y2="395" stroke="var(--canopy-highlight)" stroke-width="2" />
+                    <circle cx="230" cy="398" r="6" />
+                    <line x1="560" y1="205" x2="560" y2="355" stroke="var(--canopy-highlight)" stroke-width="2" />
+                    <circle cx="560" cy="358" r="6" />
+                    <line x1="840" y1="205" x2="840" y2="355" stroke="var(--canopy-highlight)" stroke-width="2" />
+                    <circle cx="840" cy="358" r="6" />
+                    <line x1="1170" y1="275" x2="1170" y2="395" stroke="var(--canopy-highlight)" stroke-width="2" />
+                    <circle cx="1170" cy="398" r="6" />
+                </g>
+            `
+        };
+
+        const SPECIES_NAMES = {
+            bonsai: 'บอนไซซุ้มราก',
+            ancient: 'พฤกษาโบราณกิ่งกว้าง',
+            wisteria: 'ซากุระ/วิสทีเรียพริ้วไหว',
+            crystal: 'พฤกษาคริสตัลและเห็ดเรืองแสง'
+        };
+
+        // =========================================================
+        // 3. อ้างอิง DOM Elements และสถานะเริ่มต้น
+        // =========================================================
+        const treeContainer = document.getElementById('tree-container');
+        const treeArtworkLayer = document.getElementById('tree-artwork-layer');
+        const notesLayer = document.getElementById('notes-layer');
+        const stickerParadeLayer = document.getElementById('sticker-parade-layer');
+        const captureArea = document.getElementById('capture-area');
+        const msgInput = document.getElementById('msg-input');
+        const authorInput = document.getElementById('author-input');
+        const shapeSelect = document.getElementById('shape-select');
+        const sizeSelect = document.getElementById('size-select');
+        const colorSelect = document.getElementById('color-select');
+        const paradeStickerSelect = document.getElementById('parade-sticker-select');
+        const paradeMsgInput = document.getElementById('parade-msg-input');
+        const toastBanner = document.getElementById('toast-banner');
+
+        const firebaseModal = document.getElementById('firebase-modal');
+        const presenceModal = document.getElementById('presence-modal');
+        const confirmModal = document.getElementById('confirm-modal');
+        const roomModal = document.getElementById('room-modal');
+        const listModal = document.getElementById('list-modal');
+        const imageModal = document.getElementById('image-modal');
+        const cloudSetupBanner = document.getElementById('cloud-setup-banner');
+
+        const roomCodeInput = document.getElementById('room-code-input');
+        const currentRoomLabel = document.getElementById('current-room-label');
+        const watermarkRoom = document.getElementById('watermark-room');
+        const watermarkSeason = document.getElementById('watermark-season');
+        const timeToggleBtn = document.getElementById('time-toggle-btn');
+        const connStatus = document.getElementById('conn-status');
+        const connDot = document.getElementById('conn-dot');
+        const onlineCountEl = document.getElementById('online-count');
+        const noteCountEl = document.getElementById('note-count');
+
+        let notesData = [];
+        let activeOnlineUsers = [];
+        let deletedNoteIds = new Set();
+        let activeDragId = null;
+        let selectedNoteId = null;
+        let justDragged = false;
+        let toastTimer = null;
+        let soundEnabled = true;
+        let currentTreeSpecies = 'bonsai';
+        let currentLocalSeason = 'autumn';
+        let isNightMode = false;
+        let seenStickerEventIds = new Set();
+        let isInitialSnapshotLoad = true;
+
+        // =========================================================
+        // 4. ระบบเลือกลักษณะต้นไม้ 4 แบบ + ฤดูกาล 6 แบบ + กลางวัน/กลางคืน (Local Only)
+        // =========================================================
+        try {
+            const savedSpecies = localStorage.getItem('messageTree_localSpecies');
+            if (savedSpecies && TREE_ARTWORKS[savedSpecies]) currentTreeSpecies = savedSpecies;
+            const savedSeason = localStorage.getItem('messageTree_localSeason');
+            if (savedSeason && SEASONS[savedSeason]) currentLocalSeason = savedSeason;
+            if (localStorage.getItem('messageTree_localNight') === 'true') isNightMode = true;
+            const savedAuthor = localStorage.getItem('messageTree_authorName');
+            if (savedAuthor) authorInput.value = savedAuthor;
+        } catch (e) {}
+
+        authorInput.addEventListener('change', () => {
+            try {
+                localStorage.setItem('messageTree_authorName', authorInput.value.trim());
+            } catch (e) {}
+            if (isFirebaseReady) sendPresenceHeartbeat();
+        });
+
+        function renderTreeSpeciesArtwork(notify = false) {
+            treeArtworkLayer.innerHTML = TREE_ARTWORKS[currentTreeSpecies] || TREE_ARTWORKS.bonsai;
+            document.querySelectorAll('.species-chip').forEach((chip) => {
+                chip.classList.toggle('active', chip.dataset.species === currentTreeSpecies);
+            });
+            try {
+                localStorage.setItem('messageTree_localSpecies', currentTreeSpecies);
+            } catch (e) {}
+            if (notify) {
+                showToast(`เปลี่ยนทรงต้นไม้เป็น "${SPECIES_NAMES[currentTreeSpecies]}" เฉพาะหน้าจอคุณแล้ว 🌲`);
+            }
+        }
+
+        window.selectTreeSpecies = function (speciesKey) {
+            currentTreeSpecies = speciesKey;
+            renderTreeSpeciesArtwork(true);
+            playSound('pin');
+        };
+
+        function applyLocalAtmosphere(notify = false) {
+            const config = SEASONS[currentLocalSeason] || SEASONS.autumn;
+            const palette = isNightMode ? config.night : config.day;
+
+            Object.entries(palette).forEach(([cssVar, value]) => {
+                document.documentElement.style.setProperty(cssVar, value);
+            });
+
+            document.documentElement.style.setProperty('--biolum-opacity', isNightMode ? '0.95' : '0.18');
+            document.documentElement.style.setProperty('--night-overlay-opacity', isNightMode ? '1' : '0');
+            document.documentElement.style.setProperty('--day-sky-opacity', isNightMode ? '0' : '1');
+
+            document.body.classList.toggle('night-mode', isNightMode);
+            timeToggleBtn.innerHTML = isNightMode ? '🌙 กลางคืน' : '☀️ กลางวัน';
+
+            document.querySelectorAll('.season-chip').forEach((chip) => {
+                chip.classList.toggle('active', chip.dataset.season === currentLocalSeason);
+            });
+
+            const timeLabel = isNightMode ? 'กลางคืน' : 'กลางวัน';
+            watermarkSeason.textContent = `${config.name} • ${timeLabel}`;
+
+            try {
+                localStorage.setItem('messageTree_localSeason', currentLocalSeason);
+                localStorage.setItem('messageTree_localNight', String(isNightMode));
+            } catch (e) {}
+
+            if (notify) {
+                showToast(`เปลี่ยนฉากเป็น "${config.name} (${timeLabel})" เฉพาะหน้าจอคุณแล้ว ✨`);
+            }
+        }
+
+        window.selectLocalSeason = function (seasonKey) {
+            currentLocalSeason = seasonKey;
+            applyLocalAtmosphere(true);
+            playSound('pin');
+        };
+
+        window.toggleDayNight = function () {
+            isNightMode = !isNightMode;
+            applyLocalAtmosphere(true);
+            playSound('pin');
+        };
+
+        renderTreeSpeciesArtwork(false);
+        applyLocalAtmosphere(false);
+
+        // =========================================================
+        // 5. ระบบอนุภาคฤดูกาล + หิ่งห้อย
+        // =========================================================
+        function startSeasonParticles() {
+            const sky = document.getElementById('sky-effects');
+            setInterval(() => {
+                if (document.hidden) return;
+                const config = SEASONS[currentLocalSeason] || SEASONS.autumn;
+                const p = document.createElement('div');
+                const spawnFirefly = isNightMode && Math.random() > 0.42;
+                const pType = spawnFirefly ? 'firefly' : config.particleType;
+                p.className = `season-particle ${pType}`;
+
+                const color1 = (isNightMode ? config.night : config.day)['--particle-color-1'];
+                const color2 = (isNightMode ? config.night : config.day)['--particle-color-2'];
+                const chosenColor = Math.random() > 0.45 ? color1 : color2;
+
+                p.style.backgroundColor = chosenColor;
+                p.style.color = chosenColor;
+                p.style.left = (10 + Math.random() * 80) + 'vw';
+
+                const duration = 6.5 + Math.random() * 4.5;
+                p.style.animationDuration = duration + 's';
+                sky.appendChild(p);
+                setTimeout(() => p.remove(), duration * 1000);
+            }, 1600);
+        }
+        startSeasonParticles();
+
+        // =========================================================
+        // 6. ช่องส่งสติกเกอร์เดินขบวนด้านล่าง (ขวา -> ซ้าย)
+        // =========================================================
+        paradeMsgInput.addEventListener('keydown', (e) => {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                window.sendWalkingSticker();
+            }
+        });
+
+        function spawnWalkingStickerOnScreen(emoji, labelText) {
+            const walker = document.createElement('div');
+            walker.className = 'walking-sticker';
+            const bottomOffset = 4 + Math.floor(Math.random() * 24);
+            walker.style.bottom = bottomOffset + 'px';
+
+            const walkDuration = 11 + Math.random() * 4;
+            walker.style.animationDuration = walkDuration + 's';
+
+            const bubbleHtml = labelText
+                ? `<div class="sticker-bubble">${escapeHTML(labelText)}</div>`
+                : '';
+
+            walker.innerHTML = `
+                ${bubbleHtml}
+                <div class="sticker-walker-body">${escapeHTML(emoji)}</div>
+            `;
+
+            stickerParadeLayer.appendChild(walker);
+            setTimeout(() => walker.remove(), (walkDuration + 0.5) * 1000);
+        }
+
+        window.sendWalkingSticker = async function () {
+            const emoji = paradeStickerSelect.value || '🐕';
+            const rawMsg = paradeMsgInput.value.trim();
+            const author = authorInput.value.trim();
+            const displayLabel = rawMsg
+                ? (author ? `${author}: ${rawMsg}` : rawMsg)
+                : (author ? author : '');
+
+            const eventId = `stk_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+            seenStickerEventIds.add(eventId);
+
+            spawnWalkingStickerOnScreen(emoji, displayLabel);
+            paradeMsgInput.value = '';
+            playSound('pin');
+
+            if (isFirebaseReady && db && currentUserId) {
+                try {
+                    const stickerDocRef = doc(db, 'artifacts', appId, 'public', 'data', `tree_stickers_${currentRoomId}`, eventId);
+                    await setDoc(stickerDocRef, {
+                        emoji,
+                        label: displayLabel,
+                        senderUid: currentUserId,
+                        createdAt: Date.now()
+                    });
+                    setTimeout(() => deleteDoc(stickerDocRef).catch(() => {}), 18000);
+                } catch (err) {}
+            }
+        };
+
+        // =========================================================
+        // 7. ระบบเสียงประกอบ (Web Audio API)
+        // =========================================================
+        let audioCtx = null;
+        function getAudioContext() {
+            if (!audioCtx) {
+                const AudioContextClass = window.AudioContext || window.webkitAudioContext;
+                if (AudioContextClass) audioCtx = new AudioContextClass();
+            }
+            if (audioCtx && audioCtx.state === 'suspended') audioCtx.resume();
+            return audioCtx;
+        }
+
+        function playSound(type) {
+            if (!soundEnabled) return;
+            const ctx = getAudioContext();
+            if (!ctx) return;
+
+            const now = ctx.currentTime;
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+
+            if (type === 'pin') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(540, now);
+                osc.frequency.exponentialRampToValueAtTime(920, now + 0.12);
+                gain.gain.setValueAtTime(0.14, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.18);
+                osc.start(now);
+                osc.stop(now + 0.19);
+            } else if (type === 'chime') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(784, now);
+                osc.frequency.exponentialRampToValueAtTime(1046, now + 0.16);
+                gain.gain.setValueAtTime(0.08, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.24);
+                osc.start(now);
+                osc.stop(now + 0.25);
+            } else if (type === 'heart') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(680, now);
+                osc.frequency.exponentialRampToValueAtTime(1120, now + 0.1);
+                gain.gain.setValueAtTime(0.11, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.14);
+                osc.start(now);
+                osc.stop(now + 0.15);
+            } else if (type === 'drop') {
+                osc.type = 'triangle';
+                osc.frequency.setValueAtTime(340, now);
+                osc.frequency.exponentialRampToValueAtTime(220, now + 0.09);
+                gain.gain.setValueAtTime(0.11, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.1);
+                osc.start(now);
+                osc.stop(now + 0.11);
+            } else if (type === 'delete') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(400, now);
+                osc.frequency.exponentialRampToValueAtTime(160, now + 0.15);
+                gain.gain.setValueAtTime(0.12, now);
+                gain.gain.exponentialRampToValueAtTime(0.001, now + 0.16);
+                osc.start(now);
+                osc.stop(now + 0.17);
+            }
+        }
+
+        window.toggleSound = function () {
+            soundEnabled = !soundEnabled;
+            const btn = document.getElementById('sound-toggle-btn');
+            btn.textContent = soundEnabled ? '🔊 เสียง: เปิด' : '🔇 เสียง: ปิด';
+            if (soundEnabled) playSound('pin');
+        };
+
+        // =========================================================
+        // 8. ระบบจัดการการเชื่อมต่อ Firebase Config อัตโนมัติ (URL + LocalStorage)
+        //    รองรับ 30-100+ คนแบบเรียลไทม์จริงข้ามทุกอุปกรณ์
+        // =========================================================
+        const urlParams = new URLSearchParams(window.location.search);
+        let currentRoomId = sanitizeRoomId(urlParams.get('room') || 'PUBLIC-TREE');
+        currentRoomLabel.textContent = currentRoomId;
+        watermarkRoom.textContent = currentRoomId;
+
+        function sanitizeRoomId(raw) {
+            const cleaned = (raw || '').trim().replace(/[^a-zA-Z0-9_-]/g, '');
+            return cleaned || 'PUBLIC-TREE';
+        }
+
+        const STORAGE_FB_CONFIG_KEY = 'messageTree_customFirebaseConfig_v1';
+        const appId = typeof __app_id !== 'undefined' ? __app_id : 'message-tree-fantasy-v4';
+        let activeFirebaseConfig = null;
+        let db = null;
+        let auth = null;
+        let currentUserId = null;
+        let isFirebaseReady = false;
+        let unsubscribeNotes = null;
+        let unsubscribeStickers = null;
+        let unsubscribePresence = null;
+        let heartbeatTimer = null;
+
+        // เข้ารหัส/ถอดรหัส Base64 URL-safe สำหรับแนบ config ในลิงก์ชวนเพื่อน (?room=XXX&cfg=...)
+        function encodeConfigToUrlParam(configObj) {
+            try {
+                const jsonStr = JSON.stringify(configObj);
+                return btoa(unescape(encodeURIComponent(jsonStr)))
+                    .replace(/\+/g, '-')
+                    .replace(/\//g, '_')
+                    .replace(/=+$/, '');
+            } catch (e) {
+                return '';
+            }
+        }
+
+        function decodeConfigFromUrlParam(encodedStr) {
+            try {
+                if (!encodedStr) return null;
+                let base64 = encodedStr.replace(/-/g, '+').replace(/_/g, '/');
+                while (base64.length % 4) base64 += '=';
+                const jsonStr = decodeURIComponent(escape(atob(base64)));
+                const parsed = JSON.parse(jsonStr);
+                if (parsed && parsed.apiKey && parsed.projectId) return parsed;
+            } catch (e) {}
+            return null;
+        }
+
+        // แปลงข้อความที่ผู้ใช้ก๊อปปี้มาจาก Firebase Console (รองรับทั้ง JSON และ JS Object)
+        function parseFlexibleFirebaseConfig(rawText) {
+            if (!rawText || typeof rawText !== 'string') return null;
+            let text = rawText.trim();
+            // ตัดส่วน const firebaseConfig = ... ออกถ้าผู้ใช้ก๊อปมาทั้งบล็อก
+            const firstBrace = text.indexOf('{');
+            const lastBrace = text.lastIndexOf('}');
+            if (firstBrace !== -1 && lastBrace !== -1 && lastBrace > firstBrace) {
+                text = text.slice(firstBrace, lastBrace + 1);
+            }
+            try {
+                const direct = JSON.parse(text);
+                if (direct && direct.apiKey && direct.projectId) return direct;
+            } catch (e) {}
+
+            // แปลง key ที่ไม่มีเครื่องหมายคำพูดให้เป็น JSON ถูกต้อง
+            try {
+                const normalized = text
+                    .replace(/\/\/.*$/gm, '')
+                    .replace(/([{,]\s*)([a-zA-Z0-9_]+)\s*:/g, '$1"$2":')
+                    .replace(/'/g, '"')
+                    .replace(/,\s*}/g, '}');
+                const parsed = JSON.parse(normalized);
+                if (parsed && parsed.apiKey && parsed.projectId) return parsed;
+            } catch (e) {}
+            return null;
+        }
+
+        function resolveInitialFirebaseConfig() {
+            // 1. ตรวจสอบจาก URL (?cfg=...) หรือ Hash (#cfg=...) ก่อนเสมอ เพื่อให้เพื่อนที่กดลิงก์เข้ามาเชื่อมห้องได้ทันที
+            const hashParams = new URLSearchParams((window.location.hash || '').replace(/^#/, ''));
+            const urlCfg = urlParams.get('cfg') || hashParams.get('cfg');
+            if (urlCfg) {
+                const decoded = decodeConfigFromUrlParam(urlCfg);
+                if (decoded) {
+                    try {
+                        localStorage.setItem(STORAGE_FB_CONFIG_KEY, JSON.stringify(decoded));
+                    } catch (e) {}
+                    return decoded;
+                }
+            }
+
+            // 2. ตรวจสอบจากตัวแปรสภาพแวดล้อม __firebase_config
+            if (typeof __firebase_config !== 'undefined' && __firebase_config) {
+                try {
+                    const envCfg = typeof __firebase_config === 'string' ? JSON.parse(__firebase_config) : __firebase_config;
+                    if (envCfg && envCfg.apiKey && envCfg.projectId) return envCfg;
+                } catch (e) {}
+            }
+
+            // 3. ตรวจสอบจาก LocalStorage ที่เคยบันทึกไว้บนเครื่อง
+            try {
+                const saved = localStorage.getItem(STORAGE_FB_CONFIG_KEY);
+                if (saved) {
+                    const parsed = JSON.parse(saved);
+                    if (parsed && parsed.apiKey && parsed.projectId) return parsed;
+                }
+            } catch (e) {}
+
+            return null;
+        }
+
+        function getLocalStorageKey(roomId) {
+            return `messageTree_v4_notes_${roomId}`;
+        }
+        function getDeletedStorageKey(roomId) {
+            return `messageTree_v4_deleted_${roomId}`;
+        }
+
+        function loadDeletedIds(roomId) {
+            try {
+                const raw = localStorage.getItem(getDeletedStorageKey(roomId));
+                if (raw) {
+                    const arr = JSON.parse(raw);
+                    if (Array.isArray(arr)) return new Set(arr.map(String));
+                }
+            } catch (e) {}
+            return new Set();
+        }
+
+        function saveDeletedIds(roomId, setObj) {
+            try {
+                const arr = Array.from(setObj).slice(-600);
+                localStorage.setItem(getDeletedStorageKey(roomId), JSON.stringify(arr));
+            } catch (e) {}
+        }
+
+        function saveNotesToLocal(roomId, list) {
+            try {
+                localStorage.setItem(getLocalStorageKey(roomId), JSON.stringify(list));
+            } catch (e) {}
+        }
+
+        function loadNotesFromLocal(roomId) {
+            try {
+                const raw = localStorage.getItem(getLocalStorageKey(roomId));
+                if (raw) {
+                    const parsed = JSON.parse(raw);
+                    if (Array.isArray(parsed)) return parsed;
+                }
+            } catch (e) {}
+            return [];
+        }
+
+        function loadInitialRoomState(roomId) {
+            deletedNoteIds = loadDeletedIds(roomId);
+            const cached = loadNotesFromLocal(roomId);
+            notesData = cached.filter((n) => !deletedNoteIds.has(String(n.id)));
+            noteCountEl.textContent = notesData.length;
+            notesLayer.innerHTML = '';
+            notesData.forEach((note) => renderNoteElement(note, false));
+        }
+
+        async function initFirebaseRealtime(customConfig = null) {
+            loadInitialRoomState(currentRoomId);
+            const configToUse = customConfig || resolveInitialFirebaseConfig();
+
+            if (!configToUse) {
+                isFirebaseReady = false;
+                connStatus.textContent = 'โหมดออฟไลน์ (คลิกตั้งค่า Cloud)';
+                connDot.classList.add('offline');
+                cloudSetupBanner.classList.add('visible');
+                return;
+            }
+
+            connStatus.textContent = 'กำลังเชื่อมต่อ Cloud...';
+            connDot.classList.remove('offline');
+
+            try {
+                // ล้างแอปเดิมหากมีการเปลี่ยน Config ใหม่
+                const existingApps = getApps();
+                for (const oldApp of existingApps) {
+                    await deleteApp(oldApp).catch(() => {});
+                }
+
+                const app = initializeApp(configToUse);
+                auth = getAuth(app);
+                db = getFirestore(app);
+
+                if (typeof __initial_auth_token !== 'undefined' && __initial_auth_token) {
+                    await signInWithCustomToken(auth, __initial_auth_token);
+                } else {
+                    await signInAnonymously(auth);
+                }
+
+                activeFirebaseConfig = configToUse;
+                currentUserId = auth.currentUser?.uid || ('user_' + Math.random().toString(36).slice(2, 10));
+                isFirebaseReady = true;
+                connStatus.textContent = 'ออนไลน์เรียลไทม์';
+                connDot.classList.remove('offline');
+                cloudSetupBanner.classList.remove('visible');
+
+                connectToRoom(currentRoomId);
+            } catch (err) {
+                console.warn('เชื่อมต่อ Firebase ไม่สำเร็จ:', err);
+                isFirebaseReady = false;
+                connStatus.textContent = 'เชื่อมต่อ Cloud ไม่สำเร็จ';
+                connDot.classList.add('offline');
+                cloudSetupBanner.classList.add('visible');
+                showToast('ไม่สามารถเชื่อมต่อ Firebase ได้ กรุณาตรวจสอบค่า Config หรือกฎ Firestore');
+            }
+        }
+
+        function sendPresenceHeartbeat() {
+            if (!isFirebaseReady || !db || !currentUserId) return;
+            const myPresenceDocRef = doc(db, 'artifacts', appId, 'public', 'data', `tree_presence_${currentRoomId}`, currentUserId);
+            const displayName = authorInput.value.trim() || `ผู้เยี่ยมชม #${currentUserId.slice(-4).toUpperCase()}`;
+            setDoc(myPresenceDocRef, {
+                uid: currentUserId,
+                name: displayName,
+                lastSeen: Date.now()
+            }, { merge: true }).catch(() => {});
+        }
+
+        function connectToRoom(roomId) {
+            currentRoomId = roomId;
+            currentRoomLabel.textContent = roomId;
+            watermarkRoom.textContent = roomId;
+            isInitialSnapshotLoad = true;
+
+            try {
+                const newUrl = new URL(window.location.href);
+                newUrl.searchParams.set('room', roomId);
+                if (activeFirebaseConfig) {
+                    const encoded = encodeConfigToUrlParam(activeFirebaseConfig);
+                    if (encoded) newUrl.searchParams.set('cfg', encoded);
+                }
+                window.history.replaceState({}, '', newUrl.toString());
+            } catch (e) {}
+
+            loadInitialRoomState(roomId);
+
+            if (!isFirebaseReady || !db || !currentUserId) return;
+
+            if (unsubscribeNotes) unsubscribeNotes();
+            if (unsubscribeStickers) unsubscribeStickers();
+            if (unsubscribePresence) unsubscribePresence();
+            if (heartbeatTimer) clearInterval(heartbeatTimer);
+
+            // 1. ซิงค์ป้ายข้อความแบบเรียลไทม์ด้วย docChanges (อัปเดตเฉพาะใบที่เปลี่ยน รองรับ 100+ คนลื่นไหล)
+            const notesColRef = collection(db, 'artifacts', appId, 'public', 'data', `tree_notes_${roomId}`);
+            unsubscribeNotes = onSnapshot(
+                notesColRef,
+                (snapshot) => {
+                    let hasLocalListChanged = false;
+
+                    snapshot.docChanges().forEach((change) => {
+                        const idStr = String(change.doc.id);
+
+                        if (change.type === 'removed') {
+                            notesData = notesData.filter((n) => String(n.id) !== idStr);
+                            const el = notesLayer.querySelector(`.note[data-id="${idStr}"]`);
+                            if (el) el.remove();
+                            hasLocalListChanged = true;
+                            return;
+                        }
+
+                        if (deletedNoteIds.has(idStr)) {
+                            deleteDoc(change.doc.ref).catch(() => {});
+                            return;
+                        }
+
+                        const data = change.doc.data();
+                        if (!data || !data.text) return;
+                        const noteObj = { id: idStr, ...data };
+
+                        const existingIdx = notesData.findIndex((n) => String(n.id) === idStr);
+                        if (existingIdx === -1) {
+                            notesData.push(noteObj);
+                            const isFromFriend = !isInitialSnapshotLoad && noteObj.authorUid && noteObj.authorUid !== currentUserId;
+                            renderNoteElement(noteObj, isFromFriend);
+                            if (isFromFriend) {
+                                playSound('chime');
+                            }
+                            hasLocalListChanged = true;
+                        } else {
+                            notesData[existingIdx] = noteObj;
+                            updateExistingNoteDOM(noteObj);
+                            hasLocalListChanged = true;
+                        }
+                    });
+
+                    // กรณีโหลดครั้งแรก ให้เคลียร์ป้ายแคชเก่าที่ไม่มีบน Cloud ออก
+                    if (isInitialSnapshotLoad) {
+                        const cloudIdSet = new Set();
+                        snapshot.forEach((d) => cloudIdSet.add(String(d.id)));
+                        notesData = notesData.filter((n) => cloudIdSet.has(String(n.id)));
+                        notesLayer.querySelectorAll('.note').forEach((el) => {
+                            if (!cloudIdSet.has(el.dataset.id)) el.remove();
+                        });
+                        isInitialSnapshotLoad = false;
+                        hasLocalListChanged = true;
+                    }
+
+                    if (hasLocalListChanged) {
+                        notesData.sort((a, b) => (a.createdAt || 0) - (b.createdAt || 0));
+                        saveNotesToLocal(roomId, notesData);
+                        noteCountEl.textContent = notesData.length;
+                    }
+                },
+                (err) => {
+                    console.warn('Firestore snapshot warning:', err);
+                }
+            );
+
+            // 2. ซิงค์ขบวนสติกเกอร์เดินด้านล่างแบบเรียลไทม์
+            const stickersColRef = collection(db, 'artifacts', appId, 'public', 'data', `tree_stickers_${roomId}`);
+            const roomJoinTime = Date.now();
+            unsubscribeStickers = onSnapshot(
+                stickersColRef,
+                (snapshot) => {
+                    snapshot.docChanges().forEach((change) => {
+                        if (change.type === 'added') {
+                            const idStr = String(change.doc.id);
+                            if (seenStickerEventIds.has(idStr)) return;
+                            seenStickerEventIds.add(idStr);
+
+                            const data = change.doc.data();
+                            if (data && data.emoji && (data.createdAt || 0) >= roomJoinTime - 5000) {
+                                spawnWalkingStickerOnScreen(data.emoji, data.label || '');
+                            }
+                        }
+                    });
+                },
+                () => {}
+            );
+
+            // 3. ระบบนับจำนวนผู้เล่นออนไลน์จริง 30–100+ คนแบบเรียลไทม์ (Presence Heartbeat)
+            const presenceColRef = collection(db, 'artifacts', appId, 'public', 'data', `tree_presence_${roomId}`);
+            const myPresenceDocRef = doc(db, 'artifacts', appId, 'public', 'data', `tree_presence_${roomId}`, currentUserId);
+
+            sendPresenceHeartbeat();
+            heartbeatTimer = setInterval(sendPresenceHeartbeat, 15000);
+
+            unsubscribePresence = onSnapshot(
+                presenceColRef,
+                (snapshot) => {
+                    const now = Date.now();
+                    const onlineList = [];
+                    snapshot.forEach((docSnap) => {
+                        const data = docSnap.data();
+                        if (data && (now - (data.lastSeen || 0)) < 55000) {
+                            onlineList.push({
+                                uid: docSnap.id,
+                                name: data.name || `ผู้เยี่ยมชม #${docSnap.id.slice(-4).toUpperCase()}`,
+                                isMe: docSnap.id === currentUserId
+                            });
+                        }
+                    });
+                    activeOnlineUsers = onlineList;
+                    const count = Math.max(1, onlineList.length);
+                    onlineCountEl.textContent = count;
+                    if (presenceModal.classList.contains('active')) {
+                        renderPresenceModalList();
+                    }
+                },
+                () => {
+                    onlineCountEl.textContent = '1';
+                }
+            );
+
+            window.addEventListener('beforeunload', () => {
+                deleteDoc(myPresenceDocRef).catch(() => {});
+            });
+        }
+
+        // =========================================================
+        // 9. การแปลงพิกัด % <-> px และอัปเดต DOM
+        // =========================================================
+        function pxToPercent(xPx, yPx) {
+            const w = Math.max(200, treeContainer.clientWidth || window.innerWidth);
+            const h = Math.max(200, treeContainer.clientHeight || (window.innerHeight * 0.65));
+            const xPercent = Math.max(2, Math.min(90, (xPx / w) * 100));
+            const yPercent = Math.max(3, Math.min(82, (yPx / h) * 100));
+            return {
+                xPercent: Number(xPercent.toFixed(2)),
+                yPercent: Number(yPercent.toFixed(2))
+            };
+        }
+
+        function percentToPx(note) {
+            const w = Math.max(200, treeContainer.clientWidth || window.innerWidth);
+            const h = Math.max(200, treeContainer.clientHeight || (window.innerHeight * 0.65));
+            const noteW = 112;
+            const noteH = 68;
+
+            let xPx = ((typeof note.xPercent === 'number' ? note.xPercent : 45) / 100) * w;
+            let yPx = ((typeof note.yPercent === 'number' ? note.yPercent : 30) / 100) * h;
+
+            xPx = Math.max(6, Math.min(w - noteW - 6, xPx));
+            yPx = Math.max(6, Math.min(h - noteH - 6, yPx));
+            return { xPx, yPx };
+        }
+
+        window.addEventListener('resize', () => {
+            notesData.forEach((note) => {
+                if (String(note.id) === activeDragId) return;
+                const el = notesLayer.querySelector(`.note[data-id="${note.id}"]`);
+                if (el) {
+                    const { xPx, yPx } = percentToPx(note);
+                    el.style.left = xPx + 'px';
+                    el.style.top = yPx + 'px';
+                }
+            });
+        });
+
+        function updateExistingNoteDOM(note) {
+            const idStr = String(note.id);
+            const existingEl = notesLayer.querySelector(`.note[data-id="${idStr}"]`);
+            if (!existingEl) {
+                renderNoteElement(note, false);
+                return;
+            }
+            const likeCountSpan = existingEl.querySelector('.like-count');
+            if (likeCountSpan) {
+                likeCountSpan.textContent = note.likes || 0;
+            }
+            if (idStr !== activeDragId) {
+                const { xPx, yPx } = percentToPx(note);
+                const noteScale = clampScale(note.scale);
+                existingEl.style.left = xPx + 'px';
+                existingEl.style.top = yPx + 'px';
+                existingEl.style.transform = `rotate(${note.rotation || 0}deg) scale(${noteScale})`;
+            }
+        }
+
+        // =========================================================
+        // 10. การสร้าง ลากย้าย ปรับขนาด กดหัวใจ และลบป้ายข้อความ (พร้อม Throttle)
+        // =========================================================
+        function clampScale(val) {
+            const num = typeof val === 'number' && !isNaN(val) ? val : 1;
+            return Math.max(0.65, Math.min(1.85, Number(num.toFixed(2))));
+        }
+
+        [msgInput, authorInput].forEach((inputEl) => {
+            inputEl.addEventListener('keydown', (e) => {
+                if (e.key === 'Enter') {
+                    e.preventDefault();
+                    window.addRandomNote();
+                }
+            });
+        });
+
+        document.addEventListener('click', (e) => {
+            if (!e.target.closest('.note')) {
+                selectedNoteId = null;
+                notesLayer.querySelectorAll('.note.selected').forEach((el) => el.classList.remove('selected'));
+            }
+        });
+
+        treeContainer.addEventListener('click', function (e) {
+            if (justDragged) {
+                justDragged = false;
+                return;
+            }
+            if (e.target.closest('.note')) return;
+
+            const text = msgInput.value.trim();
+            if (!text) {
+                showToast('พิมพ์ข้อความในช่องด้านล่างก่อน แล้วคลิกจุดแปะบนต้นไม้ได้เลยครับ ✍️');
+                msgInput.focus();
+                return;
+            }
+
+            const rect = treeContainer.getBoundingClientRect();
+            const rawX = e.clientX - rect.left - 56;
+            const rawY = e.clientY - rect.top - 34;
+
+            const x = Math.max(6, Math.min(rect.width - 118, rawX));
+            const y = Math.max(6, Math.min(rect.height - 74, rawY));
+
+            createNote(
+                text,
+                authorInput.value.trim() || 'ไม่ระบุชื่อ',
+                colorSelect.value,
+                shapeSelect.value,
+                parseFloat(sizeSelect.value) || 1,
+                x,
+                y
+            );
+            msgInput.value = '';
+        });
+
+        window.addRandomNote = function () {
+            const text = msgInput.value.trim();
+            if (!text) {
+                showToast('พิมพ์คำอวยพรหรือความในใจก่อนกดแปะนะครับ ✍️');
+                msgInput.focus();
+                return;
+            }
+
+            const w = Math.max(260, treeContainer.clientWidth || window.innerWidth);
+            const h = Math.max(260, treeContainer.clientHeight || (window.innerHeight * 0.65));
+            const noteW = 112;
+            const noteH = 68;
+
+            const minX = Math.max(12, w * 0.14);
+            const maxX = Math.max(minX + 10, w * 0.86 - noteW);
+            const minY = Math.max(12, h * 0.10);
+            const maxY = Math.max(minY + 10, h * 0.56 - noteH);
+
+            const randomX = Math.floor(Math.random() * (maxX - minX + 1)) + minX;
+            const randomY = Math.floor(Math.random() * (maxY - minY + 1)) + minY;
+
+            createNote(
+                text,
+                authorInput.value.trim() || 'ไม่ระบุชื่อ',
+                colorSelect.value,
+                shapeSelect.value,
+                parseFloat(sizeSelect.value) || 1,
+                randomX,
+                randomY
+            );
+            msgInput.value = '';
+        };
+
+        async function createNote(text, author, color, shape, scale, xPx, yPx) {
+            const rotation = Math.floor(Math.random() * 14) - 7;
+            const { xPercent, yPercent } = pxToPercent(xPx, yPx);
+            const noteId = `note_${Date.now()}_${Math.random().toString(36).slice(2, 7)}`;
+            const cleanScale = clampScale(scale);
+
+            const noteObj = {
+                id: noteId,
+                text,
+                author,
+                authorUid: currentUserId || 'local',
+                color,
+                shape: shape || 'square',
+                scale: cleanScale,
+                likes: 0,
+                xPercent,
+                yPercent,
+                rotation,
+                createdAt: Date.now()
+            };
+
+            notesData.push(noteObj);
+            saveNotesToLocal(currentRoomId, notesData);
+            noteCountEl.textContent = notesData.length;
+            renderNoteElement(noteObj, false);
+            playSound('pin');
+            showToast(isFirebaseReady ? 'แปะข้อความขึ้นต้นไม้และซิงค์ทุกเครื่องแล้ว! 📌✨' : 'แปะข้อความลงบนต้นไม้เรียบร้อยแล้ว! 📌');
+
+            if (isFirebaseReady && db && currentUserId) {
+                try {
+                    const noteDocRef = doc(db, 'artifacts', appId, 'public', 'data', `tree_notes_${currentRoomId}`, noteId);
+                    await setDoc(noteDocRef, noteObj);
+                } catch (err) {
+                    console.warn('ซิงค์ขึ้น Cloud ไม่สำเร็จ:', err);
+                }
+            }
+        }
+
+        window.likeNote = async function (id, event) {
+            if (event) event.stopPropagation();
+            const target = notesData.find((n) => String(n.id) === String(id));
+            if (!target) return;
+
+            target.likes = (target.likes || 0) + 1;
+            saveNotesToLocal(currentRoomId, notesData);
+            updateExistingNoteDOM(target);
+            playSound('heart');
+
+            const el = notesLayer.querySelector(`.note[data-id="${id}"]`);
+            if (el) {
+                const heart = document.createElement('span');
+                heart.className = 'floating-heart';
+                heart.textContent = '❤️';
+                heart.style.left = (el.offsetLeft + 24) + 'px';
+                heart.style.top = (el.offsetTop - 8) + 'px';
+                notesLayer.appendChild(heart);
+                setTimeout(() => heart.remove(), 1300);
+            }
+
+            if (isFirebaseReady && db && currentUserId) {
+                try {
+                    const noteDocRef = doc(db, 'artifacts', appId, 'public', 'data', `tree_notes_${currentRoomId}`, String(id));
+                    await updateDoc(noteDocRef, { likes: increment(1) });
+                } catch (err) {}
+            }
+        };
+
+        window.adjustNoteScale = async function (id, delta, event) {
+            if (event) event.stopPropagation();
+            const targetNote = notesData.find((n) => String(n.id) === String(id));
+            if (!targetNote) return;
+
+            const currentScale = clampScale(targetNote.scale);
+            const newScale = clampScale(currentScale + delta);
+            if (newScale === currentScale) return;
+
+            targetNote.scale = newScale;
+            saveNotesToLocal(currentRoomId, notesData);
+
+            const el = notesLayer.querySelector(`.note[data-id="${id}"]`);
+            if (el) {
+                el.style.transform = `rotate(${targetNote.rotation || 0}deg) scale(${newScale})`;
+            }
+            playSound('drop');
+
+            if (isFirebaseReady && db && currentUserId) {
+                try {
+                    const noteDocRef = doc(db, 'artifacts', appId, 'public', 'data', `tree_notes_${currentRoomId}`, String(id));
+                    await updateDoc(noteDocRef, { scale: newScale });
+                } catch (err) {}
+            }
+        };
+
+        function isDarkPaperColor(hex) {
+            return (hex || '').toUpperCase() === '#1E1B4B';
+        }
+
+        function renderNoteElement(note, highlightRemote = false) {
+            if (notesLayer.querySelector(`.note[data-id="${note.id}"]`)) return;
+
+            const noteEl = document.createElement('div');
+            const shapeClass = `shape-${note.shape || 'square'}`;
+            const darkClass = isDarkPaperColor(note.color) ? 'dark-note' : '';
+            const remoteClass = highlightRemote ? 'remote-arrival' : '';
+            const initialScale = clampScale(note.scale);
+            noteEl.className = `note ${shapeClass} ${darkClass} ${remoteClass}`.trim();
+            noteEl.style.backgroundColor = note.color || '#FFF9C4';
+
+            if (highlightRemote) {
+                setTimeout(() => noteEl.classList.remove('remote-arrival'), 2400);
+            }
+
+            const { xPx, yPx } = percentToPx(note);
+            noteEl.style.left = xPx + 'px';
+            noteEl.style.top = yPx + 'px';
+            noteEl.style.transform = `rotate(${note.rotation || 0}deg) scale(${initialScale})`;
+            noteEl.dataset.id = note.id;
+
+            noteEl.innerHTML = `
+                <div class="note-controls">
+                    <button type="button" class="note-ctrl-btn" title="ย่อขนาดป้าย" onclick="adjustNoteScale('${note.id}', -0.15, event)">−</button>
+                    <button type="button" class="note-ctrl-btn" title="ขยายขนาดป้าย" onclick="adjustNoteScale('${note.id}', 0.15, event)">+</button>
+                    <button type="button" class="note-ctrl-btn del" title="ลบข้อความถาวร" onclick="deleteNote('${note.id}', event)">✖</button>
+                </div>
+                <div class="note-text">${escapeHTML(note.text)}</div>
+                <div class="note-footer">
+                    <button type="button" class="like-pill" title="กดถูกใจข้อความนี้" onclick="likeNote('${note.id}', event)">
+                        ❤️ <span class="like-count">${note.likes || 0}</span>
+                    </button>
+                    <div class="note-author">- ${escapeHTML(note.author)}</div>
+                </div>
+                <div class="resize-handle" title="ลากมุมเพื่อปรับขนาดป้าย"></div>
+            `;
+
+            const resizeHandle = noteEl.querySelector('.resize-handle');
+
+            let isDragging = false;
+            let isResizing = false;
+            let hasMoved = false;
+            let startClientX = 0;
+            let startClientY = 0;
+            let offsetX = 0;
+            let offsetY = 0;
+            let startScale = initialScale;
+            let currentLiveScale = initialScale;
+            let lastCloudSyncTime = 0;
+
+            function selectThisNote() {
+                selectedNoteId = String(note.id);
+                notesLayer.querySelectorAll('.note.selected').forEach((el) => {
+                    if (el !== noteEl) el.classList.remove('selected');
+                });
+                noteEl.classList.add('selected');
+            }
+
+            function startDrag(clientX, clientY) {
+                selectThisNote();
+                isDragging = true;
+                hasMoved = false;
+                activeDragId = String(note.id);
+                startClientX = clientX;
+                startClientY = clientY;
+                offsetX = clientX - noteEl.offsetLeft;
+                offsetY = clientY - noteEl.offsetTop;
+                noteEl.classList.add('dragging');
+            }
+
+            function moveDrag(clientX, clientY) {
+                if (!isDragging) return;
+                if (Math.abs(clientX - startClientX) > 3 || Math.abs(clientY - startClientY) > 3) {
+                    hasMoved = true;
+                }
+
+                const containerW = treeContainer.clientWidth;
+                const containerH = treeContainer.clientHeight;
+                const noteW = noteEl.offsetWidth;
+                const noteH = noteEl.offsetHeight;
+
+                let newX = clientX - offsetX;
+                let newY = clientY - offsetY;
+                newX = Math.max(4, Math.min(containerW - noteW - 4, newX));
+                newY = Math.max(4, Math.min(containerH - noteH - 4, newY));
+
+                noteEl.style.left = newX + 'px';
+                noteEl.style.top = newY + 'px';
+
+                // Throttle ซิงค์ตำแหน่งระหว่างลากทุกๆ 350ms เพื่อความลื่นไหลเมื่อเล่น 100+ คน
+                const now = Date.now();
+                if (hasMoved && isFirebaseReady && db && currentUserId && (now - lastCloudSyncTime > 350)) {
+                    lastCloudSyncTime = now;
+                    const { xPercent, yPercent } = pxToPercent(newX, newY);
+                    const noteDocRef = doc(db, 'artifacts', appId, 'public', 'data', `tree_notes_${currentRoomId}`, String(note.id));
+                    updateDoc(noteDocRef, { xPercent, yPercent }).catch(() => {});
+                }
+            }
+
+            async function endDrag() {
+                if (!isDragging) return;
+                isDragging = false;
+                activeDragId = null;
+                noteEl.classList.remove('dragging');
+
+                if (hasMoved) {
+                    justDragged = true;
+                    setTimeout(() => { justDragged = false; }, 60);
+                    playSound('drop');
+
+                    const finalX = parseFloat(noteEl.style.left) || 0;
+                    const finalY = parseFloat(noteEl.style.top) || 0;
+                    const { xPercent, yPercent } = pxToPercent(finalX, finalY);
+
+                    const target = notesData.find((n) => String(n.id) === String(note.id));
+                    if (target) {
+                        target.xPercent = xPercent;
+                        target.yPercent = yPercent;
+                        saveNotesToLocal(currentRoomId, notesData);
+                    }
+
+                    if (isFirebaseReady && db && currentUserId && !deletedNoteIds.has(String(note.id))) {
+                        try {
+                            const noteDocRef = doc(db, 'artifacts', appId, 'public', 'data', `tree_notes_${currentRoomId}`, String(note.id));
+                            await updateDoc(noteDocRef, { xPercent, yPercent });
+                        } catch (err) {}
+                    }
+                }
+            }
+
+            function startResize(clientX, clientY) {
+                selectThisNote();
+                isResizing = true;
+                hasMoved = false;
+                activeDragId = String(note.id);
+                startClientX = clientX;
+                startClientY = clientY;
+                const latestNote = notesData.find((n) => String(n.id) === String(note.id));
+                startScale = clampScale(latestNote ? latestNote.scale : initialScale);
+                currentLiveScale = startScale;
+                noteEl.classList.add('resizing');
+            }
+
+            function moveResize(clientX, clientY) {
+                if (!isResizing) return;
+                hasMoved = true;
+                const deltaDiag = ((clientX - startClientX) + (clientY - startClientY)) * 0.5;
+                currentLiveScale = clampScale(startScale + (deltaDiag / 110));
+                const latestNote = notesData.find((n) => String(n.id) === String(note.id));
+                const rot = latestNote ? (latestNote.rotation || 0) : (note.rotation || 0);
+                noteEl.style.transform = `rotate(${rot}deg) scale(${currentLiveScale})`;
+            }
+
+            async function endResize() {
+                if (!isResizing) return;
+                isResizing = false;
+                activeDragId = null;
+                noteEl.classList.remove('resizing');
+
+                if (hasMoved) {
+                    justDragged = true;
+                    setTimeout(() => { justDragged = false; }, 60);
+                    playSound('drop');
+
+                    const target = notesData.find((n) => String(n.id) === String(note.id));
+                    if (target) {
+                        target.scale = currentLiveScale;
+                        saveNotesToLocal(currentRoomId, notesData);
+                    }
+
+                    if (isFirebaseReady && db && currentUserId && !deletedNoteIds.has(String(note.id))) {
+                        try {
+                            const noteDocRef = doc(db, 'artifacts', appId, 'public', 'data', `tree_notes_${currentRoomId}`, String(note.id));
+                            await updateDoc(noteDocRef, { scale: currentLiveScale });
+                        } catch (err) {}
+                    }
+                }
+            }
+
+            resizeHandle.addEventListener('mousedown', (e) => {
+                e.stopPropagation();
+                e.preventDefault();
+                startResize(e.clientX, e.clientY);
+            });
+            resizeHandle.addEventListener('touchstart', (e) => {
+                e.stopPropagation();
+                if (e.touches.length === 1) startResize(e.touches[0].clientX, e.touches[0].clientY);
+            }, { passive: true });
+
+            noteEl.addEventListener('mousedown', (e) => {
+                if (e.target.closest('.note-controls') || e.target.closest('.like-pill') || e.target.classList.contains('resize-handle')) return;
+                e.preventDefault();
+                startDrag(e.clientX, e.clientY);
+            });
+            window.addEventListener('mousemove', (e) => {
+                if (isResizing) moveResize(e.clientX, e.clientY);
+                else if (isDragging) moveDrag(e.clientX, e.clientY);
+            });
+            window.addEventListener('mouseup', () => {
+                if (isResizing) endResize();
+                else if (isDragging) endDrag();
+            });
+
+            noteEl.addEventListener('touchstart', (e) => {
+                if (e.target.closest('.note-controls') || e.target.closest('.like-pill') || e.target.classList.contains('resize-handle')) return;
+                if (e.touches.length === 1) startDrag(e.touches[0].clientX, e.touches[0].clientY);
+            }, { passive: true });
+            window.addEventListener('touchmove', (e) => {
+                if ((isResizing || isDragging) && e.touches.length === 1) {
+                    e.preventDefault();
+                    if (isResizing) moveResize(e.touches[0].clientX, e.touches[0].clientY);
+                    else moveDrag(e.touches[0].clientX, e.touches[0].clientY);
+                }
+            }, { passive: false });
+            window.addEventListener('touchend', () => {
+                if (isResizing) endResize();
+                else if (isDragging) endDrag();
+            });
+
+            notesLayer.appendChild(noteEl);
+        }
+
+        window.deleteNote = async function (id, event) {
+            if (event) event.stopPropagation();
+            const idStr = String(id);
+            playSound('delete');
+
+            deletedNoteIds.add(idStr);
+            saveDeletedIds(currentRoomId, deletedNoteIds);
+
+            notesData = notesData.filter((n) => String(n.id) !== idStr);
+            saveNotesToLocal(currentRoomId, notesData);
+            noteCountEl.textContent = notesData.length;
+            const el = notesLayer.querySelector(`.note[data-id="${idStr}"]`);
+            if (el) el.remove();
+            showToast('ลบข้อความถาวรเรียบร้อยแล้ว');
+
+            if (isFirebaseReady && db && currentUserId) {
+                try {
+                    const noteDocRef = doc(db, 'artifacts', appId, 'public', 'data', `tree_notes_${currentRoomId}`, idStr);
+                    await deleteDoc(noteDocRef);
+                } catch (err) {}
+            }
+        };
+
+        window.clearNotes = function () {
+            if (notesData.length === 0) {
+                showToast('ยังไม่มีข้อความบนต้นไม้ครับ');
+                return;
+            }
+            confirmModal.classList.add('active');
+        };
+
+        window.closeConfirmModal = function () {
+            confirmModal.classList.remove('active');
+        };
+
+        window.confirmClearNotes = async function () {
+            closeConfirmModal();
+            playSound('delete');
+
+            const oldNotes = [...notesData];
+            oldNotes.forEach((n) => deletedNoteIds.add(String(n.id)));
+            saveDeletedIds(currentRoomId, deletedNoteIds);
+
+            notesData = [];
+            saveNotesToLocal(currentRoomId, []);
+            noteCountEl.textContent = '0';
+            notesLayer.innerHTML = '';
+            showToast('ล้างข้อความทั้งหมดในห้องถาวรเรียบร้อยแล้ว');
+
+            if (isFirebaseReady && db && currentUserId) {
+                try {
+                    await Promise.all(
+                        oldNotes.map((n) =>
+                            deleteDoc(doc(db, 'artifacts', appId, 'public', 'data', `tree_notes_${currentRoomId}`, String(n.id)))
+                        )
+                    );
+                } catch (err) {}
+            }
+        };
+
+        // =========================================================
+        // 11. หน้าต่างตั้งค่า Firebase Config และรายชื่อผู้เล่นออนไลน์
+        // =========================================================
+        window.openFirebaseModal = function () {
+            const textarea = document.getElementById('firebase-config-textarea');
+            if (activeFirebaseConfig) {
+                textarea.value = JSON.stringify(activeFirebaseConfig, null, 2);
+            } else {
+                textarea.value = '';
+            }
+            firebaseModal.classList.add('active');
+        };
+
+        window.closeFirebaseModal = function () {
+            firebaseModal.classList.remove('active');
+        };
+
+        window.saveAndConnectFirebase = async function () {
+            const raw = document.getElementById('firebase-config-textarea').value;
+            const parsed = parseFlexibleFirebaseConfig(raw);
+            if (!parsed || !parsed.apiKey || !parsed.projectId) {
+                showToast('รูปแบบ firebaseConfig ไม่ถูกต้อง กรุณาตรวจสอบ apiKey และ projectId');
+                return;
+            }
+            try {
+                localStorage.setItem(STORAGE_FB_CONFIG_KEY, JSON.stringify(parsed));
+            } catch (e) {}
+            closeFirebaseModal();
+            await initFirebaseRealtime(parsed);
+            if (isFirebaseReady) {
+                showToast('เชื่อมต่อออนไลน์เรียลไทม์สำเร็จ! กดปุ่ม "คัดลอกลิงก์ชวนเพื่อน" ส่งเข้ากลุ่มได้เลย 🎉');
+            }
+        };
+
+        window.resetFirebaseConfig = function () {
+            try {
+                localStorage.removeItem(STORAGE_FB_CONFIG_KEY);
+                const cleanUrl = new URL(window.location.href);
+                cleanUrl.searchParams.delete('cfg');
+                window.history.replaceState({}, '', cleanUrl.toString());
+            } catch (e) {}
+            activeFirebaseConfig = null;
+            isFirebaseReady = false;
+            connStatus.textContent = 'โหมดออฟไลน์ (คลิกตั้งค่า Cloud)';
+            connDot.classList.add('offline');
+            cloudSetupBanner.classList.add('visible');
+            closeFirebaseModal();
+            showToast('ล้างการตั้งค่า Cloud เรียบร้อยแล้ว');
+        };
+
+        window.openPresenceModal = function () {
+            renderPresenceModalList();
+            presenceModal.classList.add('active');
+        };
+
+        window.closePresenceModal = function () {
+            presenceModal.classList.remove('active');
+        };
+
+        function renderPresenceModalList() {
+            const container = document.getElementById('online-users-list');
+            const countSpan = document.getElementById('presence-modal-count');
+            const list = activeOnlineUsers.length > 0
+                ? activeOnlineUsers
+                : [{ uid: 'local', name: authorInput.value.trim() || 'คุณ (เครื่องนี้)', isMe: true }];
+
+            countSpan.textContent = list.length;
+            container.innerHTML = list.map((u) => `
+                <div class="online-user-item">
+                    <span>🟢 ${escapeHTML(u.name)} ${u.isMe ? '(คุณ)' : ''}</span>
+                    <span class="online-user-badge">กำลังออนไลน์</span>
+                </div>
+            `).join('');
+        }
+
+        // =========================================================
+        // 12. หน้าต่างอ่านข้อความทั้งหมดในห้อง + ค้นหา
+        // =========================================================
+        window.openListModal = function () {
+            document.getElementById('search-notes-input').value = '';
+            renderAllNotesModalList();
+            listModal.classList.add('active');
+        };
+
+        window.closeListModal = function () {
+            listModal.classList.remove('active');
+        };
+
+        window.renderAllNotesModalList = function () {
+            const keyword = (document.getElementById('search-notes-input').value || '').trim().toLowerCase();
+            const container = document.getElementById('all-notes-list');
+            document.getElementById('list-modal-count').textContent = notesData.length;
+
+            const filtered = notesData.filter((n) =>
+                (n.text || '').toLowerCase().includes(keyword) ||
+                (n.author || '').toLowerCase().includes(keyword)
+            );
+
+            if (filtered.length === 0) {
+                container.innerHTML = `<p style="text-align:center; color:#64748b; padding: 16px 0;">ยังไม่มีข้อความในห้องนี้</p>`;
+                return;
+            }
+
+            container.innerHTML = filtered.map((n) => {
+                const isDark = isDarkPaperColor(n.color);
+                const textColor = isDark ? '#fef08a' : '#1e293b';
+                return `
+                    <div class="list-note-item" style="background-color: ${escapeHTML(n.color || '#FFF9C4')}; color: ${textColor};">
+                        <div>
+                            <div class="list-note-content">${escapeHTML(n.text)}</div>
+                            <div class="list-note-meta">โดย: ${escapeHTML(n.author || 'ไม่ระบุชื่อ')}</div>
+                        </div>
+                        <button type="button" class="like-pill" style="padding: 4px 10px; font-size: 12px;" onclick="likeNote('${n.id}', event); renderAllNotesModalList();">
+                            ❤️ ${n.likes || 0}
+                        </button>
+                    </div>
+                `;
+            }).join('');
+        };
+
+        // =========================================================
+        // 13. จัดการห้อง (Room ID) แชร์ลิงก์พร้อมการเชื่อมต่อ และบันทึกรูปภาพ PNG
+        // =========================================================
+        window.openRoomModal = function () {
+            roomCodeInput.value = currentRoomId;
+            roomModal.classList.add('active');
+            roomCodeInput.focus();
+        };
+
+        window.closeRoomModal = function () {
+            roomModal.classList.remove('active');
+        };
+
+        window.generateNewRoom = function () {
+            const randomRoom = 'TREE-' + Math.random().toString(36).substring(2, 7).toUpperCase();
+            roomCodeInput.value = randomRoom;
+            joinInputRoom();
+        };
+
+        window.joinInputRoom = function () {
+            const targetRoom = sanitizeRoomId(roomCodeInput.value);
+            closeRoomModal();
+            if (targetRoom === currentRoomId) {
+                showToast(`คุณอยู่ในห้อง "${targetRoom}" อยู่แล้วครับ`);
+                return;
+            }
+            connectToRoom(targetRoom);
+            showToast(`เข้าร่วมห้อง "${targetRoom}" เรียบร้อยแล้ว!`);
+        };
+
+        window.copyShareLink = function () {
+            const shareUrl = new URL(window.location.href);
+            shareUrl.searchParams.set('room', currentRoomId);
+            if (activeFirebaseConfig) {
+                const encodedCfg = encodeConfigToUrlParam(activeFirebaseConfig);
+                if (encodedCfg) {
+                    shareUrl.searchParams.set('cfg', encodedCfg);
+                }
+            }
+            const textToCopy = shareUrl.toString();
+
+            const tempInput = document.createElement('input');
+            tempInput.value = textToCopy;
+            document.body.appendChild(tempInput);
+            tempInput.select();
+            try {
+                document.execCommand('copy');
+                if (activeFirebaseConfig) {
+                    showToast(`คัดลอกลิงก์ห้อง "${currentRoomId}" (พร้อมการเชื่อมต่อออนไลน์) แล้ว ส่งเข้ากลุ่ม LINE/Discord ได้เลย!`);
+                } else {
+                    showToast(`คัดลอกลิงก์ห้อง "${currentRoomId}" แล้ว (แนะนำตั้งค่า Cloud ก่อนแชร์เพื่อให้ซิงค์ข้ามเครื่อง)`);
+                }
+            } catch (err) {
+                showToast(`รหัสห้องของคุณคือ: ${currentRoomId}`);
+            }
+            document.body.removeChild(tempInput);
+        };
+
+        window.closeImageModal = function () {
+            imageModal.classList.remove('active');
+        };
+
+        [firebaseModal, presenceModal, confirmModal, roomModal, listModal, imageModal].forEach((modal) => {
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) modal.classList.remove('active');
+            });
+        });
+
+        window.exportTreeImage = async function () {
+            if (typeof html2canvas === 'undefined') {
+                showToast('ระบบบันทึกรูปภาพยังไม่พร้อม กรุณารอสักครู่');
+                return;
+            }
+
+            const seasonName = (SEASONS[currentLocalSeason] || SEASONS.autumn).name;
+            const timeLabel = isNightMode ? 'กลางคืน' : 'กลางวัน';
+            showToast(`กำลังสร้างไฟล์รูปภาพ (${seasonName} • ${timeLabel})...`);
+            captureArea.classList.add('exporting');
+
+            try {
+                const canvas = await html2canvas(captureArea, {
+                    scale: 2,
+                    useCORS: true,
+                    logging: false
+                });
+
+                const dataUrl = canvas.toDataURL('image/png');
+                const fileName = `message-tree-${currentRoomId}-${currentTreeSpecies}-${currentLocalSeason}-${isNightMode ? 'night' : 'day'}-${Date.now()}.png`;
+
+                const link = document.createElement('a');
+                link.download = fileName;
+                link.href = dataUrl;
+                document.body.appendChild(link);
+                link.click();
+                document.body.removeChild(link);
+
+                document.getElementById('exported-image-preview').src = dataUrl;
+                const manualLink = document.getElementById('manual-download-link');
+                manualLink.href = dataUrl;
+                manualLink.download = fileName;
+                imageModal.classList.add('active');
+
+                playSound('pin');
+                showToast('บันทึกรูปภาพลงเครื่องสำเร็จ! 🎉');
+            } catch (err) {
+                console.error('Export image error:', err);
+                showToast('เกิดข้อผิดพลาดในการบันทึกรูปภาพ');
+            } finally {
+                captureArea.classList.remove('exporting');
+            }
+        };
+
+        function showToast(message) {
+            toastBanner.textContent = message;
+            toastBanner.classList.add('show');
+            if (toastTimer) clearTimeout(toastTimer);
+            toastTimer = setTimeout(() => toastBanner.classList.remove('show'), 3200);
+        }
+
+        function escapeHTML(str) {
+            if (typeof str !== 'string') return '';
+            return str
+                .replace(/&/g, '&amp;')
+                .replace(/</g, '&lt;')
+                .replace(/>/g, '&gt;')
+                .replace(/"/g, '&quot;')
+                .replace(/'/g, '&#039;');
+        }
+
+        // เริ่มต้นเชื่อมต่อระบบออนไลน์ทันที
+        initFirebaseRealtime();
+    </script>
+</body>
+</html>
